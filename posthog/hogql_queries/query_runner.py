@@ -40,6 +40,7 @@ from posthog.schema import (
     EventsQuery,
     EventTaxonomyQuery,
     ExperimentExposureQuery,
+    ExperimentsQuery,
     FilterLogicalOperator,
     FunnelCorrelationActorsQuery,
     FunnelCorrelationQuery,
@@ -585,6 +586,16 @@ def get_query_runner(
 
         return TracesQueryRunner(
             query=cast(TracesQuery | dict[str, Any], query),
+            team=team,
+            timings=timings,
+            limit_context=limit_context,
+            modifiers=modifiers,
+        )
+    if kind == "ExperimentsQuery":
+        from .ai.experiments_query_runner import ExperimentsQueryRunner
+
+        return ExperimentsQueryRunner(
+            query=cast(ExperimentsQuery | dict[str, Any], query),
             team=team,
             timings=timings,
             limit_context=limit_context,

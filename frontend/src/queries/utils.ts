@@ -16,6 +16,7 @@ import {
     ErrorTrackingQuery,
     EventsNode,
     EventsQuery,
+    ExperimentsQuery,
     FunnelsQuery,
     GoalLine,
     GroupsQuery,
@@ -192,6 +193,10 @@ export function isWebGoalsQuery(node?: Record<string, any> | null): node is WebG
 
 export function isTracesQuery(node?: Record<string, any> | null): node is TracesQuery {
     return node?.kind === NodeKind.TracesQuery
+}
+
+export function isExperimentsQuery(node?: Record<string, any> | null): node is ExperimentsQuery {
+    return node?.kind === NodeKind.ExperimentsQuery
 }
 
 export function isWebVitalsQuery(node?: Record<string, any> | null): node is WebVitalsQuery {

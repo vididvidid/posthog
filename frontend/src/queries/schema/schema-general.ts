@@ -137,6 +137,7 @@ export enum NodeKind {
     EventTaxonomyQuery = 'EventTaxonomyQuery',
     ActorsPropertyTaxonomyQuery = 'ActorsPropertyTaxonomyQuery',
     TracesQuery = 'TracesQuery',
+    ExperimentsQuery = 'ExperimentsQuery',
     VectorSearchQuery = 'VectorSearchQuery',
 }
 
@@ -176,6 +177,7 @@ export type AnyDataNode =
     | CalendarHeatmapQuery
     | RecordingsQuery
     | TracesQuery
+    | ExperimentsQuery
     | VectorSearchQuery
 
 /**
@@ -249,6 +251,7 @@ export type QuerySchema =
     | EventTaxonomyQuery
     | ActorsPropertyTaxonomyQuery
     | TracesQuery
+    | ExperimentsQuery
     | VectorSearchQuery
 
 // Keep this, because QuerySchema itself will be collapsed as it is used in other models
@@ -2938,6 +2941,54 @@ export interface TracesQuery extends DataNode<TracesQueryResponse> {
 }
 
 export type CachedTracesQueryResponse = CachedQueryResponse<TracesQueryResponse>
+
+export interface LLMExperimentEvent {
+    id: string
+    experiment_id: string
+    input?: any
+    output?: any
+    expected?: any
+    scores?: Record<string, number>
+    metadata?: Record<string, any>
+    tags?: string[]
+    metrics?: Record<string, number>
+    createdAt: string
+}
+
+export interface LLMExperiment {
+    id: string
+    name: string
+    description?: string
+    createdAt: string
+    updatedAt: string
+    project_id: string
+    dataset_id?: string
+    base_exp_id?: string
+    public?: boolean
+    repo_info?: Record<string, any>
+    metadata?: Record<string, any>
+}
+
+export interface ExperimentsQueryResponse extends AnalyticsQueryResponseBase<LLMExperiment[]> {
+    hasMore?: boolean
+    limit?: integer
+    offset?: integer
+    columns?: string[]
+}
+
+export interface ExperimentsQuery extends DataNode<ExperimentsQueryResponse> {
+    kind: NodeKind.ExperimentsQuery
+    experiment_id?: string
+    dateRange?: DateRange
+    limit?: integer
+    offset?: integer
+    filterTestAccounts?: boolean
+    showColumnConfigurator?: boolean
+    /** Properties configurable in the interface */
+    properties?: AnyPropertyFilter[]
+}
+
+export type CachedExperimentsQueryResponse = CachedQueryResponse<ExperimentsQueryResponse>
 
 // NOTE: Keep in sync with posthog/models/exchange_rate/currencies.py
 // to provide proper type safety for the baseCurrency field
