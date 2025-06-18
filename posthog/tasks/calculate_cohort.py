@@ -79,19 +79,39 @@ def get_stuck_cohort_calculation_candidates_queryset() -> QuerySet:
 
 def calculate_stuck_cohorts() -> int:
     cohort_ids = []
-    for cohort in (
+
+    stuck_cohort_ids = list(
         get_stuck_cohort_calculation_candidates_queryset()
         .filter(
             Q(last_error_at__lte=timezone.now() - BACKOFF_DURATION)  # type: ignore
             | Q(last_error_at__isnull=True)  # backwards compatability cohorts before last_error_at was introduced
         )
-        .order_by(F("last_calculation").asc(nulls_first=True))[0:MAX_STUCK_COHORTS_TO_RESET]
-    ):
-        cohort = Cohort.objects.filter(pk=cohort.pk).get()
-        cohort_ids.append(cohort.pk)
-        increment_version_and_enqueue_calculate_cohort(cohort, initiating_user=None)
+        .order_by(F("last_calculation").asc(nulls_first=True))
+        .values_list("id", flat=True)[0:MAX_STUCK_COHORTS_TO_RESET]
+    )
 
-    logger.warning("enqueued_stuck_cohorts", cohort_ids=cohort_ids, count=len(cohort_ids))
+    # Atomically claim and reset stuck cohorts
+    for cohort_id in stuck_cohort_ids:
+        # Use atomic update to reset is_calculating flag only if it's still stuck
+        updated_count = (
+            Cohort.objects.filter(
+                pk=cohort_id,
+                is_calculating=True,
+                last_calculation__lte=timezone.now() - relativedelta(hours=1),
+                last_calculation__isnull=False,
+                deleted=False,
+            )
+            .exclude(is_static=True)
+            .update(is_calculating=False)
+        )
+
+        # Only process if we successfully claimed this cohort
+        if updated_count > 0:
+            cohort = Cohort.objects.get(pk=cohort_id)
+            cohort_ids.append(cohort_id)
+            increment_version_and_enqueue_calculate_cohort(cohort, initiating_user=None)
+            logger.warning("enqueued_stuck_cohort_calculation", cohort_id=cohort_id)
+
     return len(cohort_ids)
 
 
@@ -142,8 +162,8 @@ def enqueue_cohorts_to_calculate(parallel_count: int) -> None:
         .order_by(F("last_calculation").asc(nulls_first=True))[0:remaining_capacity]
     ):
         cohort = Cohort.objects.filter(pk=cohort.pk).get()
-        logger.info("Enqueuing cohort calculation", cohort_id=cohort.pk, last_calculation=cohort.last_calculation)
         increment_version_and_enqueue_calculate_cohort(cohort, initiating_user=None)
+        logger.warning("enqueued_cohort_calculation", cohort_id=cohort.pk, last_calculation=cohort.last_calculation)
 
     backlog = get_cohort_calculation_candidates_queryset().count()
     COHORT_RECALCULATIONS_BACKLOG_GAUGE.set(backlog)
