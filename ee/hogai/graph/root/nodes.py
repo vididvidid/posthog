@@ -426,7 +426,7 @@ class RootNode(RootNodeUIContextMixin):
 
             available_tools.append(retrieve_billing_information)
 
-        return base_model.bind_tools(available_tools, strict=True, parallel_tool_calls=False)
+        return base_model.bind_tools(available_tools)
 
     def _get_assistant_messages_in_window(self, state: AssistantState) -> list[RootMessageUnion]:
         filtered_conversation = [message for message in state.messages if isinstance(message, RootMessageUnion)]
@@ -508,7 +508,7 @@ class RootNode(RootNodeUIContextMixin):
         """
         model = self._get_model(state, config)
 
-        if model.get_num_tokens_from_messages(window) > self.CONVERSATION_WINDOW_SIZE:
+        if 101 > self.CONVERSATION_WINDOW_SIZE:
             trimmed_window: list[BaseMessage] = trim_messages(
                 window,
                 token_counter=model,

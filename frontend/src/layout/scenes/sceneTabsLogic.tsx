@@ -87,11 +87,11 @@ export const sceneTabsLogic = kea<sceneTabsLogicType>([
                                 ? { ...t, active: true }
                                 : t
                             : t.active
-                              ? {
-                                    ...t,
-                                    active: false,
-                                }
-                              : t
+                            ? {
+                                  ...t,
+                                  active: false,
+                              }
+                            : t
                     )
                     return newState
                 },
@@ -116,13 +116,10 @@ export const sceneTabsLogic = kea<sceneTabsLogicType>([
         tabIds: [
             (s) => [s.tabs],
             (tabs: SceneTab[]): Record<string, boolean> => {
-                return tabs.reduce(
-                    (acc, tab) => {
-                        acc[tab.id] = true
-                        return acc
-                    },
-                    {} as Record<string, boolean>
-                )
+                return tabs.reduce((acc, tab) => {
+                    acc[tab.id] = true
+                    return acc
+                }, {} as Record<string, boolean>)
             },
         ],
     }),
@@ -165,11 +162,11 @@ export const sceneTabsLogic = kea<sceneTabsLogicType>([
                     i === activeTabIndex
                         ? { ...tab, active: true, pathname, search, hash }
                         : tab.active
-                          ? {
-                                ...tab,
-                                active: false,
-                            }
-                          : tab
+                        ? {
+                              ...tab,
+                              active: false,
+                          }
+                        : tab
                 )
                 actions.setTabs(newTabs)
             } else {
@@ -193,11 +190,11 @@ export const sceneTabsLogic = kea<sceneTabsLogicType>([
                         i === activeTabIndex
                             ? { ...tab, active: true, pathname, search, hash }
                             : tab.active
-                              ? {
-                                    ...tab,
-                                    active: false,
-                                }
-                              : tab
+                            ? {
+                                  ...tab,
+                                  active: false,
+                              }
+                            : tab
                     )
                 )
             } else {
@@ -261,13 +258,10 @@ export const sceneTabsLogic = kea<sceneTabsLogicType>([
             router.actions.replace(currentLocation.pathname, currentLocation.search, currentLocation.hash)
         },
         tabs: (tabs) => {
-            const tabIds = tabs.reduce(
-                (acc: Record<string, boolean>, tab: SceneTab) => {
-                    acc[tab.id] = true
-                    return acc
-                },
-                {} as Record<string, boolean>
-            )
+            const tabIds = tabs.reduce((acc: Record<string, boolean>, tab: SceneTab) => {
+                acc[tab.id] = true
+                return acc
+            }, {} as Record<string, boolean>)
             for (const id of Object.keys(cache.mountedTabLogic)) {
                 if (!tabIds[id]) {
                     const mountedTabLogic = cache.mountedTabLogic[id]
