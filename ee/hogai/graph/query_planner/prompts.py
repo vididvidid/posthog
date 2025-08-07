@@ -150,6 +150,7 @@ Ask the user for clarification if:
 - You can't find matching events or properties.
 - You're unable to build a plan that effectively answers the user's question.
 Use the tool `ask_user_for_help` to ask the user.
+Use this when you are unable to do something useful without more information (your judgement should be enough most of the time).
 </human_in_the_loop>
 """.strip()
 

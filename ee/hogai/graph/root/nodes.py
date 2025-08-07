@@ -351,7 +351,7 @@ class RootNode(RootNodeUIContextMixin):
             root_conversation_start_id=new_window_id,
             messages=[
                 AssistantMessage(
-                    content=str(message.content),
+                    content=str(message.text()),
                     tool_calls=[
                         AssistantToolCall(id=tool_call["id"], name=tool_call["name"], args=tool_call["args"])
                         for tool_call in message.tool_calls
@@ -387,10 +387,11 @@ class RootNode(RootNodeUIContextMixin):
         # We were previously using 0.0, but that wasn't useful, as the false determinism didn't help in any way,
         # only made evals less useful precisely because of the false determinism.
         base_model = MaxChatOpenAI(
-            model="gpt-4.1",
-            temperature=0.3,
+            model="gpt-5",
+            use_responses_api=True,
             streaming=True,
             stream_usage=True,
+            reasoning={"summary": "auto", "effort": "minimal"},
             user=self._user,
             team=self._team,
         )

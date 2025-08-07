@@ -19,7 +19,7 @@ from posthog.schema import AssistantContextualTool, AssistantNavigateUrls
 class create_and_query_insight(BaseModel):
     """
     Retrieve results for a specific data question by creating a query (aka insight), or iterate on a previous query.
-    This tool only retrieves data for a single query at a time.
+    This tool only retrieves data for a single query at a time. It does so by delegating the question to a different data querying expert.
     """
 
     query_description: str = Field(

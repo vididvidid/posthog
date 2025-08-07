@@ -67,7 +67,7 @@ class HogQLGeneratorTool(HogQLGeneratorMixin, MaxTool):
     @property
     def _model(self):
         return MaxChatOpenAI(
-            user=self._user, team=self._team, model="gpt-4.1", temperature=0.3, disable_streaming=True
+            user=self._user, team=self._team, model="gpt-5", reasoning={"effort": "minimal"}, disable_streaming=True
         ).with_structured_output(SQL_SCHEMA, method="function_calling", include_raw=False)
 
     async def _parse_output(self, output: dict) -> str:

@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 import pytz
 
 from asgiref.sync import sync_to_async
+import tiktoken
 
 if TYPE_CHECKING:
     from posthog.models import Team, User
@@ -79,6 +80,10 @@ class MaxChatOpenAI(ChatOpenAI):
         else:
             # Initialise instructions if absent or falsy
             self.model_kwargs["instructions"] = system_msg_content
+
+    def _get_encoding_model(self) -> tuple[str, tiktoken.Encoding]:
+        model, encoding = super()._get_encoding_model()
+        return model if not model.startswith("gpt-5") else "gpt-4", encoding
 
     def generate(
         self,

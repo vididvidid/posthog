@@ -139,7 +139,7 @@ class QueryPlannerNode(AssistantNode):
         dynamic_retrieve_entity_properties, dynamic_retrieve_entity_property_values = self._get_dynamic_entity_tools()
 
         return MaxChatOpenAI(
-            model="o4-mini",
+            model="gpt-5",
             use_responses_api=True,
             streaming=False,
             model_kwargs={
@@ -147,6 +147,7 @@ class QueryPlannerNode(AssistantNode):
             },
             reasoning={
                 "summary": "auto",  # Without this, there's no reasoning summaries! Only works with reasoning models
+                "effort": "medium",
             },
             team=self._team,
             user=self._user,

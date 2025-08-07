@@ -104,12 +104,6 @@ VERBOSE_NODES: set[AssistantNodeName | TaxonomyNodeName] = STREAMING_NODES | {
 }
 """Nodes that can send messages to the client."""
 
-THINKING_NODES: set[AssistantNodeName | TaxonomyNodeName] = {
-    AssistantNodeName.QUERY_PLANNER,
-    TaxonomyNodeName.LOOP_NODE,
-}
-"""Nodes that pass on thinking messages to the client. Current implementation assumes o3/o4 style of reasoning summaries!"""
-
 
 logger = structlog.get_logger(__name__)
 
@@ -483,10 +477,8 @@ class Assistant:
                             _messages.append(candidate_message)
                     return _messages
 
-        for node_name in THINKING_NODES:
-            if node_val := state_update.get(node_name):
-                # If update involves new state from a thinking node, we reset the thinking headline to be sure
-                self._reasoning_headline_chunk = None
+        # Reset the thinking headline on every value upadate, as we only update this DURING generation
+        self._reasoning_headline_chunk = None
 
         return [AssistantGenerationStatusEvent(type=AssistantGenerationStatusType.ACK)]
 
