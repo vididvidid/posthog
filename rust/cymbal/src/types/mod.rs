@@ -173,7 +173,9 @@ impl FingerprintComponent for Exception {
         let mut pieces = vec![];
         fp.update(self.exception_type.as_bytes());
         pieces.push("Exception Type".to_string());
-        if !matches!(self.stack, Some(Stacktrace::Resolved { frames: _ })) {
+        let has_no_resolved_stacktrace =
+            !matches!(self.stack, Some(Stacktrace::Resolved { frames: _ }));
+        if has_no_resolved_stacktrace {
             fp.update(self.exception_message.as_bytes());
             pieces.push("Exception Message".to_string());
         };
