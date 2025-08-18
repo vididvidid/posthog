@@ -32,8 +32,8 @@ import { pluginActivityDescriber } from 'scenes/pipeline/pipelinePluginActivityD
 import { insightActivityDescriber } from 'scenes/saved-insights/activityDescriptions'
 import { replayActivityDescriber } from 'scenes/session-recordings/activityDescription'
 import { organizationActivityDescriber } from 'scenes/settings/organization/activityDescriptions'
-import { surveyActivityDescriber } from 'scenes/surveys/surveyActivityDescriber'
 import { personalAPIKeyActivityDescriber } from 'scenes/settings/user/activityDescriptions'
+import { surveyActivityDescriber } from 'scenes/surveys/surveyActivityDescriber'
 import { teamActivityDescriber } from 'scenes/team-activity/teamActivityDescriber'
 import { urls } from 'scenes/urls'
 
