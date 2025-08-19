@@ -1,13 +1,16 @@
-import { IconCheck, IconX } from '@posthog/icons'
-import { LemonBanner, LemonButton, LemonLabel, LemonSelect } from '@posthog/lemon-ui'
 import { id } from 'chartjs-plugin-trendline'
 import clsx from 'clsx'
 import { useActions, useValues } from 'kea'
+import { useMemo } from 'react'
+
+import { IconCheck, IconX } from '@posthog/icons'
+import { LemonBanner, LemonButton, LemonLabel, LemonSelect } from '@posthog/lemon-ui'
+
 import { PropertyFilters } from 'lib/components/PropertyFilters/PropertyFilters'
 import { TaxonomicFilterGroupType } from 'lib/components/TaxonomicFilter/types'
 import { TestAccountFilterSwitch } from 'lib/components/TestAccountFiltersSwitch'
+import { useFeatureFlag } from 'lib/hooks/useFeatureFlag'
 import { LemonField } from 'lib/lemon-ui/LemonField'
-import { useMemo } from 'react'
 import { ActionFilter } from 'scenes/insights/filters/ActionFilter/ActionFilter'
 import { MathAvailability } from 'scenes/insights/filters/ActionFilter/ActionFilterRow/ActionFilterRow'
 import MaxTool from 'scenes/max/MaxTool'
@@ -17,7 +20,6 @@ import { AnyPropertyFilter, CyclotronJobFiltersType, EntityTypes, FilterType } f
 
 import { hogFunctionConfigurationLogic } from '../configuration/hogFunctionConfigurationLogic'
 import { HogFunctionFiltersInternal } from './HogFunctionFiltersInternal'
-import { useFeatureFlag } from 'lib/hooks/useFeatureFlag'
 
 function sanitizeActionFilters(filters?: FilterType): Partial<CyclotronJobFiltersType> {
     if (!filters) {
@@ -70,7 +72,6 @@ export function HogFunctionFilters({
 
     const isLegacyPlugin = configuration?.template?.id?.startsWith('plugin-')
     const isTransformation = type === 'transformation'
-    const aiFiltersCreation = useFeatureFlag('AI_HOG_FUNCTION_CREATION')
     const cdpPersonUpdatesEnabled = useFeatureFlag('CDP_PERSON_UPDATES')
 
     const taxonomicGroupTypes = useMemo(() => {
@@ -401,34 +402,28 @@ export function HogFunctionFilters({
         </div>
     )
 
-    if (aiFiltersCreation) {
-        return (
-            <MaxTool
-                name="create_hog_function_filters"
-                displayName="Set up filters with AI"
-                description="Max can set up filters for your function"
-                context={{
-                    current_filters: JSON.stringify(configuration?.filters ?? {}),
-                    function_type: type,
-                }}
-                callback={(toolOutput: string) => {
-                    const parsedFilters = JSON.parse(toolOutput)
-                    setOldFilters(configuration?.filters ?? {})
-                    setNewFilters(parsedFilters)
-                    reportAIFiltersPrompted()
-                }}
-                onMaxOpen={() => {
-                    reportAIFiltersPromptOpen()
-                }}
-                introOverride={{
-                    headline: 'What events and properties should trigger this function?',
-                    description: 'Let me help you set up the right filters for your function.',
-                }}
-            >
-                {mainContent}
-            </MaxTool>
-        )
-    }
-
-    return mainContent
+    return (
+        <MaxTool
+            identifier="create_hog_function_filters"
+            context={{
+                current_filters: JSON.stringify(configuration?.filters ?? {}),
+                function_type: type,
+            }}
+            callback={(toolOutput: string) => {
+                const parsedFilters = JSON.parse(toolOutput)
+                setOldFilters(configuration?.filters ?? {})
+                setNewFilters(parsedFilters)
+                reportAIFiltersPrompted()
+            }}
+            onMaxOpen={() => {
+                reportAIFiltersPromptOpen()
+            }}
+            introOverride={{
+                headline: 'What events and properties should trigger this function?',
+                description: 'Let me help you set up the right filters for your function.',
+            }}
+        >
+            {mainContent}
+        </MaxTool>
+    )
 }
