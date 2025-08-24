@@ -1,10 +1,12 @@
 import { useValues } from 'kea'
 
 import { NotFound } from 'lib/components/NotFound'
+import { useFeatureFlag } from 'lib/hooks/useFeatureFlag'
 import { SceneExport } from 'scenes/sceneTypes'
 
 import { ExperimentForm } from './ExperimentForm'
 import { ExperimentView } from './ExperimentView/ExperimentView'
+import { CreateExperiment } from './create-experiment/CreateExperiment'
 import { ExperimentLogicProps, FORM_MODES, experimentLogic } from './experimentLogic'
 
 export const scene: SceneExport<ExperimentLogicProps> = {
@@ -18,13 +20,18 @@ export const scene: SceneExport<ExperimentLogicProps> = {
 
 export function Experiment(): JSX.Element {
     const { formMode, experimentMissing } = useValues(experimentLogic)
+    const experimentsCollapsiblePanels = useFeatureFlag('EXPERIMENTS_COLLAPSIBLE_PANELS')
 
     if (experimentMissing) {
         return <NotFound object="experiment" />
     }
 
     return ([FORM_MODES.create, FORM_MODES.duplicate] as string[]).includes(formMode) ? (
-        <ExperimentForm />
+        experimentsCollapsiblePanels ? (
+            <CreateExperiment />
+        ) : (
+            <ExperimentForm />
+        )
     ) : (
         <ExperimentView />
     )
