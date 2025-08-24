@@ -13,15 +13,12 @@ import {
 import { PageHeader } from 'lib/components/PageHeader'
 import { LemonField } from 'lib/lemon-ui/LemonField'
 import { IconOpenInNew } from 'lib/lemon-ui/icons'
-import { IconBalance, IconPlus, IconTrash } from '@posthog/icons'
-import { Lettermark, LettermarkColor } from 'lib/lemon-ui/Lettermark'
 import { urls } from 'scenes/urls'
 
 import { FeatureFlagType } from '~/types'
 
+import { FeatureFlagVariantsList } from '../../feature-flags/FeatureFlagVariantsList'
 import { createExperimentLogic } from './createExperimentLogic'
-
-const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 export const CreateExperiment = (): JSX.Element => {
     const { 
@@ -224,11 +221,6 @@ export const CreateExperiment = (): JSX.Element => {
                                     ),
                                 },
                                 {
-                                    key: 'metrics',
-                                    header: 'Metrics',
-                                    content: <div className="p-4 text-muted">Metrics configuration coming soon...</div>,
-                                },
-                                {
                                     key: 'variants',
                                     header: 'Variants',
                                     content: (
@@ -245,106 +237,34 @@ export const CreateExperiment = (): JSX.Element => {
                                                         your users might see. The rollout percentages must add up to 100%.
                                                     </div>
                                                     
-                                                    <div className="border rounded bg-surface-primary">
-                                                        <div className="VariantFormList__row grid gap-2 items-center p-3 border-b font-semibold">
-                                                            <div />
-                                                            <div className="col-span-4">Variant key</div>
-                                                            <div className="col-span-6">Description</div>
-                                                            <div className="col-span-3 flex justify-between items-center gap-1">
-                                                                <span>Rollout</span>
-                                                                <LemonButton
-                                                                    onClick={distributeVariantsEqually}
-                                                                    tooltip="Normalize variant rollout percentages"
-                                                                    size="xsmall"
-                                                                    type="secondary"
-                                                                >
-                                                                    <IconBalance />
-                                                                </LemonButton>
-                                                            </div>
-                                                            <div />
-                                                        </div>
-                                                        
-                                                        {variants?.map((_, index) => (
-                                                            <div key={index} className="VariantFormList__row grid gap-2 p-3 border-b last:border-b-0">
-                                                                <div className="flex items-center justify-center">
-                                                                    <Lettermark name={alphabet[index]} color={LettermarkColor.Gray} />
-                                                                </div>
-                                                                <div className="col-span-4">
-                                                                    <LemonField name={['parameters', 'feature_flag_variants', index, 'key']}>
-                                                                        <LemonInput
-                                                                            data-attr="experiment-variant-key"
-                                                                            className="ph-ignore-input"
-                                                                            placeholder={`variant-${index + 1}`}
-                                                                            autoComplete="off"
-                                                                            autoCapitalize="off"
-                                                                        />
-                                                                    </LemonField>
-                                                                </div>
-                                                                <div className="col-span-6">
-                                                                    <LemonField name={['parameters', 'feature_flag_variants', index, 'name']}>
-                                                                        <LemonInput
-                                                                            data-attr="experiment-variant-name"
-                                                                            className="ph-ignore-input"
-                                                                            placeholder="Description"
-                                                                        />
-                                                                    </LemonField>
-                                                                </div>
-                                                                <div className="col-span-3">
-                                                                    <LemonField name={['parameters', 'feature_flag_variants', index, 'rollout_percentage']}>
-                                                                        {({ value, onChange }) => (
-                                                                            <LemonInput
-                                                                                type="number"
-                                                                                min={0}
-                                                                                max={100}
-                                                                                value={value?.toString() || '0'}
-                                                                                onChange={(val) => {
-                                                                                    const numVal = parseInt(String(val || '0')) || 0
-                                                                                    onChange(numVal)
-                                                                                }}
-                                                                                suffix={<span>%</span>}
-                                                                                data-attr="experiment-variant-rollout-percentage-input"
-                                                                            />
-                                                                        )}
-                                                                    </LemonField>
-                                                                </div>
-                                                                <div className="flex items-center">
-                                                                    <LemonButton
-                                                                        size="xsmall"
-                                                                        type="secondary"
-                                                                        icon={<IconTrash />}
-                                                                        onClick={() => removeVariant(index)}
-                                                                        disabledReason={
-                                                                            variants.length <= 2 
-                                                                                ? 'Experiments must have at least 2 variants'
-                                                                                : undefined
-                                                                        }
-                                                                        noPadding
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                        
-                                                        <div className="p-3">
-                                                            <LemonButton
-                                                                type="secondary"
-                                                                onClick={addVariant}
-                                                                icon={<IconPlus />}
-                                                                size="small"
-                                                            >
-                                                                Add variant
-                                                            </LemonButton>
-                                                        </div>
-                                                    </div>
-
-                                                    {variantPercentageSum !== 100 && (
-                                                        <div className="text-warning text-sm">
-                                                            ⚠️ Rollout percentages must add up to 100% (currently {variantPercentageSum}%)
-                                                        </div>
-                                                    )}
+                                                    <FeatureFlagVariantsList
+                                                        variants={variants}
+                                                        onAddVariant={addVariant}
+                                                        onRemoveVariant={removeVariant}
+                                                        onDistributeVariantsEqually={distributeVariantsEqually}
+                                                        showPayloads={false}
+                                                        canEditVariant={() => true}
+                                                        readOnly={false}
+                                                        minVariants={2}
+                                                        addVariantText="Add variant"
+                                                        distributionValidation={true}
+                                                        variantRolloutSum={variantPercentageSum}
+                                                        areVariantsValid={variantPercentageSum === 100}
+                                                        disabledReason={undefined}
+                                                        // Use experiment form paths instead of feature flag paths
+                                                        variantKeyPath={(index) => ['parameters', 'feature_flag_variants', index, 'key']}
+                                                        variantNamePath={(index) => ['parameters', 'feature_flag_variants', index, 'name']}
+                                                        variantRolloutPath={(index) => ['parameters', 'feature_flag_variants', index, 'rollout_percentage']}
+                                                    />
                                                 </>
                                             )}
                                         </div>
                                     ),
+                                },
+                                {
+                                    key: 'metrics',
+                                    header: 'Metrics',
+                                    content: <div className="p-4 text-muted">Metrics configuration coming soon...</div>,
                                 },
                             ]}
                         />

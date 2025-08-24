@@ -90,6 +90,7 @@ import FeatureFlagProjects from './FeatureFlagProjects'
 import { FeatureFlagReleaseConditions } from './FeatureFlagReleaseConditions'
 import FeatureFlagSchedule from './FeatureFlagSchedule'
 import { FeatureFlagStatusIndicator } from './FeatureFlagStatusIndicator'
+import { FeatureFlagVariantsList } from './FeatureFlagVariantsList'
 import { RecentFeatureFlagInsights } from './RecentFeatureFlagInsightsCard'
 import { FeatureFlagLogicProps, featureFlagLogic, getRecordingFilterForFlagVariant } from './featureFlagLogic'
 import { FeatureFlagsTab, featureFlagsLogic } from './featureFlagsLogic'
@@ -1348,177 +1349,55 @@ function FeatureFlagRollout({ readOnly }: { readOnly?: boolean }): JSX.Element {
                         </div>
                     )}
                     {!readOnly && multivariateEnabled && (
-                        <div className="feature-flag-variants">
-                            <h3 className="l4">Variant keys</h3>
-                            <span>The rollout percentage of feature flag variants must add up to 100%</span>
-                            <div className="VariantFormList deprecated-space-y-2">
-                                <div className="VariantFormList__row grid label-row gap-2 items-center">
-                                    <div />
-                                    <div className="col-span-4">Variant key</div>
-                                    <div className="col-span-6">Description</div>
-                                    <div className="col-span-8">
-                                        <div className="flex flex-col">
-                                            <b>Payload</b>
-                                            <span className="text-secondary font-normal">
-                                                Specify return payload when the variant key matches
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-3 flex justify-between items-center gap-1">
-                                        <span>Rollout</span>
-                                        <LemonButton
-                                            onClick={distributeVariantsEqually}
-                                            tooltip="Normalize variant rollout percentages"
-                                        >
-                                            <IconBalance />
-                                        </LemonButton>
-                                    </div>
-                                </div>
-                                {variants.map((variant: MultivariateFlagVariant, index: number) => (
-                                    <Group key={index} name="filters">
-                                        <div className="VariantFormList__row grid gap-2">
-                                            <div className="flex items-center justify-center">
-                                                <Lettermark name={alphabet[index]} color={LettermarkColor.Gray} />
-                                            </div>
-                                            <div className="col-span-4">
-                                                <LemonField name={['multivariate', 'variants', index, 'key']}>
-                                                    <LemonInput
-                                                        data-attr="feature-flag-variant-key"
-                                                        data-key-index={index.toString()}
-                                                        className="ph-ignore-input"
-                                                        placeholder={`example-variant-${index + 1}`}
-                                                        autoComplete="off"
-                                                        autoCapitalize="off"
-                                                        autoCorrect="off"
-                                                        spellCheck={false}
-                                                        disabled={!canEditVariant(index)}
-                                                    />
-                                                </LemonField>
-                                            </div>
-                                            <div className="col-span-6">
-                                                <LemonField name={['multivariate', 'variants', index, 'name']}>
-                                                    <LemonInput
-                                                        data-attr="feature-flag-variant-name"
-                                                        className="ph-ignore-input"
-                                                        placeholder="Description"
-                                                    />
-                                                </LemonField>
-                                            </div>
-                                            <div className="col-span-8">
-                                                <LemonField name={['payloads', index]}>
-                                                    {({ value, onChange }) => {
-                                                        return (
-                                                            <JSONEditorInput
-                                                                onChange={(newValue) => {
-                                                                    onChange(newValue === '' ? undefined : newValue)
-                                                                }}
-                                                                value={value}
-                                                                placeholder='{"key": "value"}'
-                                                            />
+                        <FeatureFlagVariantsList
+                            variants={variants}
+                            onAddVariant={addVariant}
+                            onRemoveVariant={removeVariant}
+                            onDistributeVariantsEqually={distributeVariantsEqually}
+                            showPayloads={true}
+                            canEditVariant={canEditVariant}
+                            readOnly={readOnly}
+                            minVariants={1}
+                            addVariantText="Add variant"
+                            distributionValidation={true}
+                            variantRolloutSum={variantRolloutSum}
+                            areVariantsValid={areVariantRolloutsValid}
+                            disabledReason={
+                                hasExperiment && !isDraftExperiment
+                                    ? 'Cannot add variants to a feature flag that is part of a launched experiment. To update variants, reset the experiment to draft.'
+                                    : undefined
+                            }
+                            focusVariantKeyField={focusVariantKeyField}
+                            renderAdditionalVariantFields={(variant, index) => (
+                                <>
+                                    {filterGroups.filter(
+                                        (group) => group.variant === variant.key
+                                    ).length > 0 && (
+                                        <span className="text-secondary text-xs">
+                                            Overridden by{' '}
+                                            <strong>
+                                                {variantConcatWithPunctuation(
+                                                    filterGroups
+                                                        .filter(
+                                                            (group) =>
+                                                                group.variant != null &&
+                                                                group.variant === variant.key
                                                         )
-                                                    }}
-                                                </LemonField>
-                                            </div>
-                                            <div className="col-span-3">
-                                                <LemonField
-                                                    name={['multivariate', 'variants', index, 'rollout_percentage']}
-                                                >
-                                                    {({ value, onChange }) => (
-                                                        <div>
-                                                            <LemonInput
-                                                                type="number"
-                                                                min={0}
-                                                                max={100}
-                                                                // .toString() prevents user from typing leading zeroes
-                                                                value={value.toString()}
-                                                                onChange={(changedValue) => {
-                                                                    const valueInt =
-                                                                        changedValue !== undefined &&
-                                                                        !isNaN(changedValue)
-                                                                            ? parseInt(changedValue.toString())
-                                                                            : 0
-
-                                                                    onChange(valueInt)
-                                                                }}
-                                                                suffix={<span>%</span>}
-                                                                data-attr="feature-flag-variant-rollout-percentage-input"
-                                                            />
-                                                            {filterGroups.filter(
-                                                                (group) => group.variant === variant.key
-                                                            ).length > 0 && (
-                                                                <span className="text-secondary text-xs">
-                                                                    Overridden by{' '}
-                                                                    <strong>
-                                                                        {variantConcatWithPunctuation(
-                                                                            filterGroups
-                                                                                .filter(
-                                                                                    (group) =>
-                                                                                        group.variant != null &&
-                                                                                        group.variant === variant.key
-                                                                                )
-                                                                                .map(
-                                                                                    (variant) =>
-                                                                                        'Set ' +
-                                                                                        (filterGroups.findIndex(
-                                                                                            (group) => group === variant
-                                                                                        ) +
-                                                                                            1)
-                                                                                )
-                                                                        )}
-                                                                    </strong>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </LemonField>
-                                            </div>
-                                            <div className="flex items-center justify-center">
-                                                {variants.length > 1 && (
-                                                    <LemonButton
-                                                        icon={<IconTrash />}
-                                                        data-attr={`delete-prop-filter-${index}`}
-                                                        noPadding
-                                                        onClick={() => removeVariant(index)}
-                                                        disabledReason={
-                                                            !canEditVariant(index)
-                                                                ? isDraftExperiment
-                                                                    ? 'Cannot delete the control variant from an experiment.'
-                                                                    : 'Cannot delete variants from a feature flag that is part of a launched experiment.'
-                                                                : undefined
-                                                        }
-                                                        tooltipPlacement="top-end"
-                                                    />
+                                                        .map(
+                                                            (variant) =>
+                                                                'Set ' +
+                                                                (filterGroups.findIndex(
+                                                                    (group) => group === variant
+                                                                ) +
+                                                                    1)
+                                                        )
                                                 )}
-                                            </div>
-                                        </div>
-                                    </Group>
-                                ))}
-                                {variants.length > 0 && !areVariantRolloutsValid && (
-                                    <p className="text-danger">
-                                        Percentage rollouts for variants must sum to 100 (currently {variantRolloutSum}
-                                        ).
-                                    </p>
-                                )}
-                                <LemonButton
-                                    type="secondary"
-                                    onClick={() => {
-                                        const newIndex = variants.length
-                                        addVariant()
-                                        focusVariantKeyField(newIndex)
-                                    }}
-                                    icon={<IconPlus />}
-                                    disabledReason={
-                                        hasExperiment && !isDraftExperiment
-                                            ? 'Cannot add variants to a feature flag that is part of a launched experiment. To update variants, reset the experiment to draft.'
-                                            : undefined
-                                    }
-                                    tooltipPlacement="top-start"
-                                    center
-                                >
-                                    Add variant
-                                </LemonButton>
-                            </div>
-                        </div>
+                                            </strong>
+                                        </span>
+                                    )}
+                                </>
+                            )}
+                        />
                     )}
                 </>
             )}
