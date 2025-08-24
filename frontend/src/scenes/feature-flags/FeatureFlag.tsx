@@ -8,13 +8,11 @@ import { PostHogFeature } from 'posthog-js/react'
 import { useEffect, useState } from 'react'
 
 import {
-    IconBalance,
     IconCollapse,
     IconExpand,
     IconGlobe,
     IconInfo,
     IconLaptop,
-    IconPlus,
     IconRewindPlay,
     IconServer,
     IconTrash,

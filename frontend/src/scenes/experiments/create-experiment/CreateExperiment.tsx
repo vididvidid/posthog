@@ -18,7 +18,10 @@ import { urls } from 'scenes/urls'
 import { FeatureFlagType } from '~/types'
 
 import { FeatureFlagVariantsList } from '../../feature-flags/FeatureFlagVariantsList'
+import { ExperimentMetricsList } from '../ExperimentMetricsList'
+import { modalsLogic } from '../modalsLogic'
 import { createExperimentLogic } from './createExperimentLogic'
+import { CreateExperimentMetricSourceModal } from './CreateExperimentMetricSourceModal'
 
 export const CreateExperiment = (): JSX.Element => {
     const { 
@@ -29,7 +32,9 @@ export const CreateExperiment = (): JSX.Element => {
         existingFeatureFlagsLoading,
         selectedFeatureFlag,
         variants,
-        variantPercentageSum
+        variantPercentageSum,
+        primaryMetrics,
+        secondaryMetrics
     } = useValues(createExperimentLogic)
     const { 
         setSelectedSection, 
@@ -41,8 +46,11 @@ export const CreateExperiment = (): JSX.Element => {
         generateFeatureFlagKeyFromName,
         addVariant,
         removeVariant,
-        distributeVariantsEqually
+        distributeVariantsEqually,
+        removePrimaryMetric,
+        removeSecondaryMetric
     } = useActions(createExperimentLogic)
+    const { openPrimaryMetricSourceModal, openSecondaryMetricSourceModal } = useActions(modalsLogic)
 
     return (
         <div>
@@ -138,7 +146,7 @@ export const CreateExperiment = (): JSX.Element => {
                                                     <div className="space-y-3">
                                                         <LemonTable
                                                             loading={existingFeatureFlagsLoading}
-                                                            dataSource={availableFeatureFlags.map(option => option.flag)}
+                                                            dataSource={availableFeatureFlags.map((option: { label: string; value: string; flag: FeatureFlagType }) => option.flag)}
                                                             useURLForSorting={false}
                                                             pagination={{
                                                                 pageSize: 5,
@@ -264,13 +272,64 @@ export const CreateExperiment = (): JSX.Element => {
                                 {
                                     key: 'metrics',
                                     header: 'Metrics',
-                                    content: <div className="p-4 text-muted">Metrics configuration coming soon...</div>,
+                                    content: (
+                                        <div className="p-4 space-y-6 max-w-200">
+                                            <div className="text-muted max-w-xl">
+                                                Configure metrics to measure the impact of your experiment. Add primary metrics for the main outcomes you want to measure, and secondary metrics to monitor for side effects.
+                                            </div>
+
+                                            {/* Primary Metrics */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold">Primary metrics</h3>
+                                                        <div className="text-sm text-muted">
+                                                            The main metrics you want to improve with this experiment
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <ExperimentMetricsList
+                                                    metrics={primaryMetrics || []}
+                                                    onAddMetric={openPrimaryMetricSourceModal}
+                                                    onRemoveMetric={removePrimaryMetric}
+                                                    isPrimary={true}
+                                                    readOnly={false}
+                                                />
+                                            </div>
+
+                                            {/* Secondary Metrics */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold">Secondary metrics</h3>
+                                                        <div className="text-sm text-muted">
+                                                            Additional metrics to monitor for potential side effects
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <ExperimentMetricsList
+                                                    metrics={secondaryMetrics || []}
+                                                    onAddMetric={openSecondaryMetricSourceModal}
+                                                    onRemoveMetric={removeSecondaryMetric}
+                                                    isPrimary={false}
+                                                    readOnly={false}
+                                                />
+                                            </div>
+                                        </div>
+                                    ),
                                 },
                             ]}
                         />
                     </div>
                 </Form>
             </div>
+            
+            
+            {/* Metric Source Modals for creation flow */}
+            <CreateExperimentMetricSourceModal isSecondary={false} />
+            <CreateExperimentMetricSourceModal isSecondary={true} />
         </div>
     )
 }

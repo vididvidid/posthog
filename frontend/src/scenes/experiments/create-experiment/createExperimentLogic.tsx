@@ -5,13 +5,19 @@ import { router } from 'kea-router'
 
 import api from 'lib/api'
 import { lemonToast } from 'lib/lemon-ui/LemonToast/LemonToast'
-import { hasFormErrors, debounce } from 'lib/utils'
+import { debounce, hasFormErrors } from 'lib/utils'
 import { projectLogic } from 'scenes/projectLogic'
 import { urls } from 'scenes/urls'
 
+import { ExperimentFunnelsQuery, ExperimentMetric, ExperimentTrendsQuery } from '~/queries/schema/schema-general'
 import { Experiment, FeatureFlagType, MultivariateFlagVariant } from '~/types'
 
+import { modalsLogic } from '../modalsLogic'
 import type { createExperimentLogicType } from './createExperimentLogicType'
+
+export type ExperimentMetricQuery = ExperimentFunnelsQuery | ExperimentTrendsQuery | ExperimentMetric
+
+// import type { createExperimentLogicType } from './createExperimentLogicType'"
 
 // Utility function to generate feature flag key from experiment name
 const generateFeatureFlagKey = (name: string, unavailableKeys: Set<string>): string => {
@@ -34,11 +40,11 @@ const generateFeatureFlagKey = (name: string, unavailableKeys: Set<string>): str
 const NEW_EXPERIMENT = {
     name: '',
     description: '',
-    type: 'product',
+    type: 'product' as const,
     feature_flag_key: '',
     filters: {},
-    metrics: [],
-    metrics_secondary: [],
+    metrics: [] as ExperimentMetricQuery[],
+    metrics_secondary: [] as ExperimentMetricQuery[],
     saved_metrics_ids: [],
     saved_metrics: [],
     parameters: {
@@ -61,6 +67,7 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
     path(['scenes', 'experiments', 'create-experiment', 'createExperimentLogic']),
     connect(() => ({
         values: [projectLogic, ['currentProjectId']],
+        actions: [modalsLogic, ['openPrimaryMetricSourceModal', 'openSecondaryMetricSourceModal']],
     })),
     actions({
         setSelectedSection: (section: string | null) => ({ section }),
@@ -74,6 +81,12 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
         addVariant: true,
         removeVariant: (index: number) => ({ index }),
         distributeVariantsEqually: true,
+        removePrimaryMetric: (index: number) => ({ index }),
+        removeSecondaryMetric: (index: number) => ({ index }),
+        addMetricsToForm: (primaryMetrics: ExperimentMetricQuery[], secondaryMetrics: ExperimentMetricQuery[]) => ({
+            primaryMetrics,
+            secondaryMetrics,
+        }),
     }),
     reducers({
         selectedSection: [
@@ -104,30 +117,23 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
     }),
     forms({
         experimentForm: {
-            defaults: NEW_EXPERIMENT,
+            defaults: NEW_EXPERIMENT as any,
             errors: ({ name, feature_flag_key }) => ({
                 name: !name?.trim() && 'Please enter a name',
                 feature_flag_key: !feature_flag_key?.trim() && 'Please enter a feature flag key',
             }),
             submit: async (formValues) => {
                 const currentProjectId = projectLogic.values.currentProjectId
-                try {
-                    const response: Experiment = await api.create(
-                        `api/projects/${currentProjectId}/experiments`,
-                        {
-                            ...formValues,
-                            name: formValues.name.trim(),
-                            // Always save as draft initially
-                            start_date: null,
-                        }
-                    )
+                const response: Experiment = await api.create(`api/projects/${currentProjectId}/experiments`, {
+                    ...formValues,
+                    name: formValues.name.trim(),
+                    // Always save as draft initially
+                    start_date: null,
+                })
 
-                    if (response?.id) {
-                        lemonToast.success('Experiment saved as draft')
-                        router.actions.push(urls.experiment(response.id))
-                    }
-                } catch (error: any) {
-                    lemonToast.error(error.detail || 'Failed to create experiment')
+                if (response?.id) {
+                    lemonToast.success('Experiment saved as draft')
+                    router.actions.push(urls.experiment(response.id))
                 }
             },
         },
@@ -159,14 +165,13 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
                             `api/projects/${currentProjectId}/feature_flags/?search=${encodeURIComponent(key)}`
                         )
                         const existingFlag = response.results?.find((flag: FeatureFlagType) => flag.key === key)
-                        
+
                         if (existingFlag) {
                             actions.validateFeatureFlagKeyFailure('This feature flag key is already in use')
                             return { available: false }
-                        } else {
-                            actions.validateFeatureFlagKeySuccess({ available: true }, { key })
-                            return { available: true }
                         }
+                        actions.validateFeatureFlagKeySuccess({ available: true }, { key })
+                        return { available: true }
                     } catch (error) {
                         actions.validateFeatureFlagKeyFailure('Error validating feature flag key')
                         return null
@@ -179,7 +184,7 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
         saveAsDraft: () => {
             // Touch form fields to show validation errors
             actions.touchExperimentFormField('name')
-            
+
             // Validate based on mode
             if (values.featureFlagMode === 'new') {
                 actions.touchExperimentFormField('feature_flag_key')
@@ -187,18 +192,18 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
                 lemonToast.error('Please select an existing feature flag')
                 return
             }
-            
+
             // Check if form has validation errors
             if (hasFormErrors(values.experimentFormErrors)) {
                 // Don't proceed if there are validation errors
                 return
             }
-            
+
             // Update form with selected flag key if using existing mode
             if (values.featureFlagMode === 'existing' && values.selectedFeatureFlag) {
                 actions.setExperimentFormValue('feature_flag_key', values.selectedFeatureFlag.key)
             }
-            
+
             // If validation passes, submit the form
             actions.submitExperimentForm()
         },
@@ -208,7 +213,7 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
         generateFeatureFlagKeyFromName: () => {
             const experimentName = values.experimentForm.name
             if (experimentName?.trim()) {
-                const unavailableKeys = new Set(values.existingFeatureFlags.map(flag => flag.key))
+                const unavailableKeys = new Set(values.existingFeatureFlags.map((flag) => flag.key))
                 const generatedKey = generateFeatureFlagKey(experimentName.trim(), unavailableKeys)
                 actions.setExperimentFormValue('feature_flag_key', generatedKey)
                 // Validate the generated key
@@ -259,7 +264,7 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
                 lemonToast.error('Experiments must have at least 2 variants')
                 return
             }
-            const updatedVariants = variants.filter((_, i) => i !== index)
+            const updatedVariants = variants.filter((_: MultivariateFlagVariant, i: number) => i !== index)
             actions.setExperimentFormValue('parameters', {
                 ...values.experimentForm.parameters,
                 feature_flag_variants: updatedVariants,
@@ -268,23 +273,48 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
         distributeVariantsEqually: () => {
             const variants = values.experimentForm.parameters.feature_flag_variants || []
             const numVariants = variants.length
-            if (numVariants === 0) return
-            
+            if (numVariants === 0) {
+                return
+            }
+
             const percentageRounded = Math.round(100 / numVariants)
             const totalRounded = percentageRounded * numVariants
             const delta = totalRounded - 100
-            
-            const updatedVariants = variants.map((variant, index) => {
-                const adjustedPercentage = index === numVariants - 1 
-                    ? percentageRounded - delta  // Apply rounding error to last variant
-                    : percentageRounded
+
+            const updatedVariants = variants.map((variant: MultivariateFlagVariant, index: number) => {
+                const adjustedPercentage =
+                    index === numVariants - 1
+                        ? percentageRounded - delta // Apply rounding error to last variant
+                        : percentageRounded
                 return { ...variant, rollout_percentage: adjustedPercentage }
             })
-            
+
             actions.setExperimentFormValue('parameters', {
                 ...values.experimentForm.parameters,
                 feature_flag_variants: updatedVariants,
             })
+        },
+        addMetricsToForm: ({ primaryMetrics, secondaryMetrics }) => {
+            actions.setExperimentFormValue('metrics', primaryMetrics)
+            actions.setExperimentFormValue('metrics_secondary', secondaryMetrics)
+        },
+        removePrimaryMetric: ({ index }) => {
+            const metrics = values.experimentForm.metrics || []
+            if (metrics.length > index) {
+                actions.setExperimentFormValue(
+                    'metrics',
+                    metrics.filter((_: ExperimentMetricQuery, idx: number) => idx !== index)
+                )
+            }
+        },
+        removeSecondaryMetric: ({ index }) => {
+            const metrics = values.experimentForm.metrics_secondary || []
+            if (metrics.length > index) {
+                actions.setExperimentFormValue(
+                    'metrics_secondary',
+                    metrics.filter((_: ExperimentMetricQuery, idx: number) => idx !== index)
+                )
+            }
         },
     })),
     selectors({
@@ -308,6 +338,18 @@ export const createExperimentLogic = kea<createExperimentLogicType>([
             (s) => [s.variants],
             (variants): number => {
                 return variants.reduce((sum, variant) => sum + (variant.rollout_percentage || 0), 0)
+            },
+        ],
+        primaryMetrics: [
+            (s) => [s.experimentForm],
+            (experimentForm: Partial<Experiment>): ExperimentMetricQuery[] => {
+                return experimentForm.metrics || []
+            },
+        ],
+        secondaryMetrics: [
+            (s) => [s.experimentForm],
+            (experimentForm: Partial<Experiment>): ExperimentMetricQuery[] => {
+                return experimentForm.metrics_secondary || []
             },
         ],
         breadcrumbs: [

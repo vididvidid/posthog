@@ -1,4 +1,6 @@
 import { useActions, useValues } from 'kea'
+import { useEffect } from 'react'
+import { router } from 'kea-router'
 
 import { LemonTabs } from '@posthog/lemon-ui'
 
@@ -26,6 +28,7 @@ import {
     ResultsQuery,
 } from '../components/ResultsBreakdown'
 import { experimentLogic } from '../experimentLogic'
+import { modalsLogic } from '../modalsLogic'
 import { isLegacyExperiment, isLegacyExperimentQuery } from '../utils'
 import { DistributionModal, DistributionTable } from './DistributionTable'
 import { ExperimentHeader } from './ExperimentHeader'
@@ -185,8 +188,22 @@ const VariantsTab = (): JSX.Element => {
 
 export function ExperimentView(): JSX.Element {
     const { experimentLoading, experimentId, tabKey, usesNewQueryRunner } = useValues(experimentLogic)
-
+    const { searchParams } = useValues(router)
     const { setTabKey } = useActions(experimentLogic)
+    const { openPrimaryMetricSourceModal, openSecondaryMetricSourceModal } = useActions(modalsLogic)
+
+    // Check for URL parameters to open metric modals
+    useEffect(() => {
+        if (searchParams.add_primary_metric === 'true') {
+            openPrimaryMetricSourceModal()
+            // Clean up the URL parameter
+            router.actions.push(router.values.location.pathname)
+        } else if (searchParams.add_secondary_metric === 'true') {
+            openSecondaryMetricSourceModal()
+            // Clean up the URL parameter
+            router.actions.push(router.values.location.pathname)
+        }
+    }, [searchParams, openPrimaryMetricSourceModal, openSecondaryMetricSourceModal])
 
     return (
         <>
