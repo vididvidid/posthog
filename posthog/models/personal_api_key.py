@@ -6,8 +6,9 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
 
-from .utils import generate_random_token
 from posthog.models.activity_logging.model_activity import ModelActivityMixin
+
+from .utils import generate_random_token
 
 ModeType = Literal["sha256", "pbkdf2"]
 PERSONAL_API_KEY_MODES_TO_TRY: tuple[tuple[ModeType, Optional[int]], ...] = (
