@@ -16,7 +16,7 @@ export function SceneActions({ className }: { className?: string }): JSX.Element
 
     return (
         <>
-            <div className={cn('flex justify-end gap-1', className)}>
+            <div className={cn('flex items-center justify-end gap-1', className)}>
                 <div className="contents" ref={setActionsContainer} />
 
                 {scenePanelIsPresent && (
