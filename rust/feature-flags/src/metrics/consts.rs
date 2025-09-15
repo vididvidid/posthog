@@ -44,3 +44,5 @@ pub const FLAG_DB_CONNECTION_TIME: &str = "flags_db_connection_time";
 
 // Flag request kludges (to see how often we have to massage our request data to be able to parse it)
 pub const FLAG_REQUEST_KLUDGE_COUNTER: &str = "flags_request_kludge_total";
+
+pub const FLAG_REQUEST_DURATION_MS: &str = "flags_request_duration_ms";

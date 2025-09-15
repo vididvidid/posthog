@@ -10,13 +10,13 @@ pub mod properties;
 pub mod session_recording;
 pub mod types;
 
-use common_metrics::inc;
+use common_metrics::{inc, timing_guard};
 pub use types::*;
 
 use crate::{
     api::{errors::FlagError, types::FlagsResponse},
     flags::flag_service::FlagService,
-    metrics::consts::FLAG_REQUESTS_COUNTER,
+    metrics::consts::{FLAG_REQUEST_DURATION_MS, FLAG_REQUESTS_COUNTER},
 };
 use std::collections::HashMap;
 use tracing::{info, instrument, warn};
@@ -59,6 +59,9 @@ pub async fn process_request(context: RequestContext) -> Result<FlagsResponse, F
             team.id,
             team.project_id
         );
+
+        let team_labels = vec![("team_id".to_string(), team.id.to_string())];
+        let _request_timer = timing_guard(FLAG_REQUEST_DURATION_MS, &team_labels);
 
         // Early exit if flags are disabled
         let flags_response = if request.is_flags_disabled() {
