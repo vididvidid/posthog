@@ -1,5 +1,6 @@
 use crate::log_record::KafkaLogRow;
 use anyhow::anyhow;
+use apache_avro::{Schema, Writer};
 use capture::config::KafkaConfig;
 use health::HealthHandle;
 use metrics::{counter, gauge};
@@ -12,12 +13,10 @@ use serde_json;
 use std::result::Result::Ok;
 use std::time::Duration;
 use tracing::log::{debug, info};
-use apache_avro::{Writer, Schema};
 
 struct KafkaContext {
     liveness: HealthHandle,
 }
-
 
 const AVRO_SCHEMA: &str = r#"
 {
