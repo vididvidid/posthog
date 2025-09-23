@@ -17,22 +17,20 @@
 # changes to them are deliberate, as otherwise we could introduce unexpected
 # behaviour in deployments.
 
-from typing import Literal, cast, get_args
 from collections.abc import Callable
+from typing import Literal, cast, get_args
 from urllib.parse import urljoin
 
+import requests
 from django.conf import settings
 from django.core.cache import cache
-from django.db import DEFAULT_DB_ALIAS
-from django.db import connections
+from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 from django.http import HttpRequest, HttpResponse, JsonResponse
-import requests
-from structlog import get_logger
-
 from posthog.celery import app
 from posthog.database_healthcheck import DATABASE_FOR_FLAG_MATCHING
 from posthog.kafka_client.client import can_connect as can_connect_to_kafka
+from structlog import get_logger
 
 logger = get_logger(__name__)
 

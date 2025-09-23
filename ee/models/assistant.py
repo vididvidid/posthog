@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from django.db import models
 from django.utils import timezone
-
 from posthog.models.team.team import Team
 from posthog.models.user import User
 from posthog.models.utils import UUIDTModel
@@ -24,6 +23,7 @@ class Conversation(UUIDTModel):
     class Type(models.TextChoices):
         ASSISTANT = "assistant", "Assistant"
         TOOL_CALL = "tool_call", "Tool call"
+        DEEP_RESEARCH = "deep_research", "Deep research"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
@@ -170,7 +170,11 @@ class CoreMemory(UUIDTModel):
 
     @property
     def formatted_text(self) -> str:
-        return self.text[0:5000]
+        if len(self.text) > 5000:
+            # If memory text exceeds 5000 characters, truncate it. For the user, the most important bits are at the start
+            # (i.e. foundational /init info) and at the end (i.e. freshest memories)
+            return self.text[:2500] + "…" + self.text[-2500:]
+        return self.text
 
     @property
     def answers_left(self) -> int:

@@ -1,7 +1,6 @@
 from typing import Optional
 
 from freezegun import freeze_time
-
 from posthog.models import Filter
 from posthog.queries.trends.trends import Trends
 from posthog.test.base import APIBaseTest

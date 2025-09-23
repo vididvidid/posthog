@@ -1,12 +1,9 @@
 import uuid
 from datetime import datetime
-from typing import cast, Any
-from unittest.mock import Mock, patch
+from typing import Any, cast
 
 from django.test import override_settings
 from freezegun import freeze_time
-from rest_framework.exceptions import ValidationError
-
 from posthog.api.instance_settings import get_instance_setting
 from posthog.clickhouse.client.execute import sync_execute
 from posthog.constants import INSIGHT_FUNNELS, FunnelOrderType, FunnelVizType
@@ -21,14 +18,12 @@ from posthog.hogql_queries.insights.funnels.test.breakdown_cases import (
     funnel_breakdown_group_test_factory,
     funnel_breakdown_test_factory,
 )
-from posthog.hogql_queries.insights.funnels.test.conversion_time_cases import (
-    funnel_conversion_time_test_factory,
-)
+from posthog.hogql_queries.insights.funnels.test.conversion_time_cases import funnel_conversion_time_test_factory
+from posthog.hogql_queries.insights.funnels.test.test_funnel_persons import get_actors
 from posthog.hogql_queries.legacy_compatibility.filter_to_query import filter_to_query
 from posthog.models import Action, Element, Team
 from posthog.models.cohort.cohort import Cohort
 from posthog.models.group.util import create_group
-from posthog.models.group_type_mapping import GroupTypeMapping
 from posthog.models.property_definition import PropertyDefinition
 from posthog.schema import (
     ActionsNode,
@@ -36,20 +31,20 @@ from posthog.schema import (
     BaseMathType,
     BreakdownFilter,
     BreakdownType,
+    DateRange,
     EventPropertyFilter,
     EventsNode,
     FunnelConversionWindowTimeUnit,
+    FunnelExclusionEventsNode,
+    FunnelMathType,
     FunnelsActorsQuery,
     FunnelsFilter,
     FunnelsQuery,
     GroupPropertyFilter,
     HogQLQueryModifiers,
-    DateRange,
+    IntervalType,
     PersonsOnEventsMode,
     PropertyOperator,
-    FunnelMathType,
-    FunnelExclusionEventsNode,
-    IntervalType,
 )
 from posthog.test.base import (
     APIBaseTest,
@@ -62,7 +57,9 @@ from posthog.test.base import (
     snapshot_clickhouse_queries,
 )
 from posthog.test.test_journeys import journeys_for
-from posthog.hogql_queries.insights.funnels.test.test_funnel_persons import get_actors
+from posthog.test.test_utils import create_group_type_mapping_without_created_at
+from rest_framework.exceptions import ValidationError
+from unittest.mock import Mock, patch
 
 
 class PseudoFunnelActors:
@@ -164,10 +161,10 @@ def funnel_test_factory(Funnel, event_factory, person_factory):
             )
 
         def _create_groups(self):
-            GroupTypeMapping.objects.create(
+            create_group_type_mapping_without_created_at(
                 team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
             )
-            GroupTypeMapping.objects.create(
+            create_group_type_mapping_without_created_at(
                 team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
             )
 
@@ -1087,6 +1084,7 @@ def funnel_test_factory(Funnel, event_factory, person_factory):
                     {"id": "user signed up", "type": "events", "order": 1},
                 ],
                 "insight": INSIGHT_FUNNELS,
+                "funnel_window_days": 14,
                 "funnel_window_interval": 2,
                 "funnel_window_interval_unit": "week",
             }
@@ -3756,10 +3754,10 @@ def funnel_test_factory(Funnel, event_factory, person_factory):
             self.assertEqual(result[1]["count"], 1)
 
         def test_funnel_aggregation_with_groups_with_cohort_filtering(self):
-            GroupTypeMapping.objects.create(
+            create_group_type_mapping_without_created_at(
                 team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
             )
-            GroupTypeMapping.objects.create(
+            create_group_type_mapping_without_created_at(
                 team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
             )
 

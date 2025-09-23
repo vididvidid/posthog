@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta, UTC
 import json
+from datetime import UTC, datetime, timedelta
 from typing import Optional
-from unittest.mock import call, patch
 
 from django.core.cache import cache
 from django.db import connection
@@ -11,8 +10,6 @@ from django.test.client import RequestFactory
 from django.utils.timezone import now
 from freezegun.api import freeze_time
 from parameterized import parameterized
-from rest_framework import status
-
 from posthog import redis
 from posthog.api.cohort import get_cohort_actors_for_feature_flag
 from posthog.api.feature_flag import FeatureFlagSerializer
@@ -20,22 +17,19 @@ from posthog.constants import AvailableFeature
 from posthog.models import Experiment, FeatureFlag, GroupTypeMapping, User
 from posthog.models.cohort import Cohort
 from posthog.models.dashboard import Dashboard
-from products.early_access_features.backend.models import EarlyAccessFeature
 from posthog.models.feature_flag import (
     FeatureFlagDashboards,
     get_all_feature_flags,
     get_feature_flags_for_team_in_cache,
 )
 from posthog.models.feature_flag.feature_flag import FeatureFlagHashKeyOverride
+from posthog.models.feature_flag.flag_status import FeatureFlagStatus
 from posthog.models.group.util import create_group
 from posthog.models.organization import Organization
 from posthog.models.person import Person
 from posthog.models.personal_api_key import PersonalAPIKey, hash_key_value
 from posthog.models.team.team import Team
 from posthog.models.utils import generate_random_token_personal
-from posthog.models.feature_flag.flag_status import (
-    FeatureFlagStatus,
-)
 from posthog.test.base import (
     APIBaseTest,
     ClickhouseTestMixin,
@@ -47,6 +41,10 @@ from posthog.test.base import (
     snapshot_postgres_queries_context,
 )
 from posthog.test.db_context_capturing import capture_db_queries
+from posthog.test.test_utils import create_group_type_mapping_without_created_at
+from products.early_access_features.backend.models import EarlyAccessFeature
+from rest_framework import status
+from unittest.mock import call, patch
 
 
 class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
@@ -2393,7 +2391,7 @@ class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
             format="json",
         ).json()
 
-        with self.assertNumQueries(FuzzyInt(8, 9)):
+        with self.assertNumQueries(FuzzyInt(9, 10)):
             response = self.client.get(f"/api/projects/{self.team.id}/feature_flags/my_flags")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -2408,7 +2406,7 @@ class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
                 format="json",
             ).json()
 
-        with self.assertNumQueries(FuzzyInt(8, 9)):
+        with self.assertNumQueries(FuzzyInt(9, 10)):
             response = self.client.get(f"/api/projects/{self.team.id}/feature_flags/my_flags")
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -2561,7 +2559,7 @@ class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
             format="json",
         )
 
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
 
@@ -4039,10 +4037,10 @@ class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
     @patch("posthog.api.feature_flag.report_user_action")
     def test_evaluation_reasons(self, mock_capture):
         FeatureFlag.objects.all().delete()
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
         )
         Person.objects.create(
@@ -5418,10 +5416,10 @@ class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
             )
 
     def test_cant_create_flag_with_group_data_that_fails_to_query(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="xyz", group_type_index=1
         )
 
@@ -6282,6 +6280,21 @@ class TestFeatureFlag(APIBaseTest, ClickhouseTestMixin):
         # Verify response changed from the original cached version
         self.assertNotEqual(data["cohorts"], updated_data.get("cohorts", {}))
 
+    @patch("posthog.api.feature_flag.report_user_action")
+    def test_create_feature_flag_without_usage_dashboard(self, mock_capture):
+        response = self.client.post(
+            f"/api/projects/{self.team.id}/feature_flags/",
+            {"key": "no-usage-dashboard", "_should_create_usage_dashboard": False},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.json()["key"], "no-usage-dashboard")
+        self.assertEqual(response.json()["name"], "")
+        instance = FeatureFlag.objects.get(id=response.json()["id"])
+        self.assertEqual(instance.key, "no-usage-dashboard")
+        self.assertEqual(instance.name, "")
+        assert instance.usage_dashboard is None, "Usage dashboard should not be created"
+
 
 class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
     def test_creating_static_cohort_with_deleted_flag(self):
@@ -6492,7 +6505,7 @@ class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
         )
 
         # TODO: Ensure server-side cursors are disabled, since in production we use this with pgbouncer
-        with snapshot_postgres_queries_context(self), self.assertNumQueries(23):
+        with snapshot_postgres_queries_context(self), self.assertNumQueries(24):
             get_cohort_actors_for_feature_flag(cohort.pk, "some-feature2", self.team.pk)
 
         cohort.refresh_from_db()
@@ -6546,7 +6559,7 @@ class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
         )
 
         # Extra queries because each batch adds its own queries
-        with snapshot_postgres_queries_context(self), self.assertNumQueries(35):
+        with snapshot_postgres_queries_context(self), self.assertNumQueries(37):
             get_cohort_actors_for_feature_flag(cohort.pk, "some-feature2", self.team.pk, batchsize=2)
 
         cohort.refresh_from_db()
@@ -6557,7 +6570,7 @@ class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
         self.assertEqual(len(response.json()["results"]), 3, response)
 
         # if the batch is big enough, it's fewer queries
-        with self.assertNumQueries(20):
+        with self.assertNumQueries(21):
             get_cohort_actors_for_feature_flag(cohort.pk, "some-feature2", self.team.pk, batchsize=10)
 
         cohort.refresh_from_db()
@@ -6621,7 +6634,7 @@ class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
             name="some cohort",
         )
 
-        with snapshot_postgres_queries_context(self), self.assertNumQueries(20):
+        with snapshot_postgres_queries_context(self), self.assertNumQueries(21):
             # no queries to evaluate flags, because all evaluated using override properties
             get_cohort_actors_for_feature_flag(cohort.pk, "some-feature2", self.team.pk)
 
@@ -6638,7 +6651,7 @@ class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
             name="some cohort2",
         )
 
-        with snapshot_postgres_queries_context(self), self.assertNumQueries(20):
+        with snapshot_postgres_queries_context(self), self.assertNumQueries(21):
             # person3 doesn't match filter conditions so is pre-filtered out
             get_cohort_actors_for_feature_flag(cohort2.pk, "some-feature-new", self.team.pk)
 
@@ -6732,7 +6745,7 @@ class TestCohortGenerationForFeatureFlag(APIBaseTest, ClickhouseTestMixin):
             name="some cohort",
         )
 
-        with snapshot_postgres_queries_context(self), self.assertNumQueries(37):
+        with snapshot_postgres_queries_context(self), self.assertNumQueries(38):
             # forced to evaluate flags by going to db, because cohorts need db query to evaluate
             get_cohort_actors_for_feature_flag(cohort.pk, "some-feature-new", self.team.pk)
 
@@ -7088,7 +7101,7 @@ class TestBlastRadius(ClickhouseTestMixin, APIBaseTest):
 
     @snapshot_clickhouse_queries
     def test_user_blast_radius_with_groups(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
 
@@ -7125,7 +7138,7 @@ class TestBlastRadius(ClickhouseTestMixin, APIBaseTest):
         self.assertDictContainsSubset({"users_affected": 4, "total_users": 10}, response_json)
 
     def test_user_blast_radius_with_groups_zero_selected(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
 
@@ -7162,10 +7175,10 @@ class TestBlastRadius(ClickhouseTestMixin, APIBaseTest):
         self.assertDictContainsSubset({"users_affected": 0, "total_users": 5}, response_json)
 
     def test_user_blast_radius_with_groups_all_selected(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
         )
 
@@ -7195,10 +7208,10 @@ class TestBlastRadius(ClickhouseTestMixin, APIBaseTest):
 
     @snapshot_clickhouse_queries
     def test_user_blast_radius_with_groups_multiple_queries(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
         )
 
@@ -7241,11 +7254,85 @@ class TestBlastRadius(ClickhouseTestMixin, APIBaseTest):
         response_json = response.json()
         self.assertDictContainsSubset({"users_affected": 3, "total_users": 10}, response_json)
 
-    def test_user_blast_radius_with_groups_incorrect_group_type(self):
+    @snapshot_clickhouse_queries
+    def test_user_blast_radius_with_group_key_property(self):
+        """Test that $group_key property correctly identifies groups by their key"""
         GroupTypeMapping.objects.create(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+
+        # Create groups with specific keys
+        for i in range(10):
+            create_group(
+                team_id=self.team.pk,
+                group_type_index=0,
+                group_key=f"org:{i}",
+                properties={"industry": f"tech-{i}"},
+            )
+
+        # Create one specific group we'll target
+        create_group(
+            team_id=self.team.pk,
+            group_type_index=0,
+            group_key="special-workspace",
+            properties={"industry": "special"},
+        )
+
+        # Test filtering by exact group key match
+        response = self.client.post(
+            f"/api/projects/{self.team.id}/feature_flags/user_blast_radius",
+            {
+                "condition": {
+                    "properties": [
+                        {
+                            "key": "$group_key",
+                            "type": "group",
+                            "value": "special-workspace",
+                            "operator": "exact",
+                            "group_type_index": 0,
+                        }
+                    ],
+                    "rollout_percentage": 100,
+                },
+                "group_type_index": 0,
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_json = response.json()
+        # Should match exactly 1 group out of 11 total
+        self.assertDictContainsSubset({"users_affected": 1, "total_users": 11}, response_json)
+
+        # Test filtering by group key pattern
+        response = self.client.post(
+            f"/api/projects/{self.team.id}/feature_flags/user_blast_radius",
+            {
+                "condition": {
+                    "properties": [
+                        {
+                            "key": "$group_key",
+                            "type": "group",
+                            "value": "org:",
+                            "operator": "icontains",
+                            "group_type_index": 0,
+                        }
+                    ],
+                    "rollout_percentage": 100,
+                },
+                "group_type_index": 0,
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_json = response.json()
+        # Should match 10 groups that have "org:" in their key
+        self.assertDictContainsSubset({"users_affected": 10, "total_users": 11}, response_json)
+
+    def test_user_blast_radius_with_groups_incorrect_group_type(self):
+        create_group_type_mapping_without_created_at(
+            team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
+        )
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
         )
 
@@ -7324,7 +7411,7 @@ class TestResiliency(TransactionTestCase, QueryMatchingTest):
         create_request = rf.post(f"api/projects/{self.team.pk}/feature_flags/", {"name": "xyz"})
         create_request.user = self.user
 
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
 
@@ -7836,7 +7923,7 @@ class TestResiliency(TransactionTestCase, QueryMatchingTest):
         create_request = rf.post(f"api/projects/{self.team.pk}/feature_flags/", {"name": "xyz"})
         create_request.user = self.user
 
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
 

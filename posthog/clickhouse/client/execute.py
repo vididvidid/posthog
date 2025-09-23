@@ -11,24 +11,23 @@ from typing import Any, Optional, Union
 import sqlparse
 from clickhouse_driver import Client as SyncClient
 from django.conf import settings as app_settings
-from prometheus_client import Counter
-
+from opentelemetry import trace
 from posthog.clickhouse.client.connection import (
+    ClickHouseUser,
     Workload,
     get_client_from_pool,
     get_default_clickhouse_workload_type,
-    ClickHouseUser,
 )
 from posthog.clickhouse.client.escape import substitute_params
-from posthog.clickhouse.query_tagging import get_query_tag_value, get_query_tags, QueryTags, AccessMethod, Feature
+from posthog.clickhouse.client.tracing import trace_clickhouse_query_decorator
+from posthog.clickhouse.query_tagging import AccessMethod, Feature, QueryTags, get_query_tag_value, get_query_tags
 from posthog.cloud_utils import is_cloud
-from posthog.errors import wrap_query_error, ch_error_type
+from posthog.errors import ch_error_type, wrap_query_error
 from posthog.exceptions import ClickHouseAtCapacity
-from posthog.settings import CLICKHOUSE_PER_TEAM_QUERY_SETTINGS, TEST, API_QUERIES_ON_ONLINE_CLUSTER
+from posthog.settings import API_QUERIES_ON_ONLINE_CLUSTER, CLICKHOUSE_PER_TEAM_QUERY_SETTINGS, TEST
 from posthog.temporal.common.clickhouse import update_query_tags_with_temporal_info
 from posthog.utils import generate_short_id, patchable
-from posthog.clickhouse.client.tracing import trace_clickhouse_query_decorator
-from opentelemetry import trace
+from prometheus_client import Counter
 
 QUERY_STARTED_COUNTER = Counter(
     "posthog_clickhouse_query_sent",

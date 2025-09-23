@@ -1,8 +1,6 @@
 import freezegun
 from django.http import HttpResponse
 from parameterized import parameterized
-from rest_framework import status
-
 from posthog.kafka_client.client import ClickhouseProducer
 from posthog.kafka_client.topics import KAFKA_CLICKHOUSE_SESSION_REPLAY_EVENTS
 from posthog.models import Organization, Team
@@ -14,7 +12,7 @@ from posthog.test.base import (
     _create_event,
     snapshot_clickhouse_queries,
 )
-
+from rest_framework import status
 
 INSERT_SINGLE_HEATMAP_EVENT = """
 INSERT INTO sharded_heatmaps (

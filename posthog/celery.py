@@ -15,9 +15,8 @@ from celery.signals import (
 from django.dispatch import receiver
 from django_structlog.celery import signals
 from django_structlog.celery.steps import DjangoStructLogInitStep
-from prometheus_client import Counter, Histogram
-
 from posthog.cloud_utils import is_cloud
+from prometheus_client import Counter, Histogram
 
 logger = structlog.get_logger(__name__)
 
@@ -99,8 +98,8 @@ def receiver_bind_extra_request_metadata(sender, signal, task=None, logger=None)
 
 @worker_process_init.connect
 def on_worker_start(**kwargs) -> None:
-    from prometheus_client import start_http_server
     from posthoganalytics import setup
+    from prometheus_client import start_http_server
 
     setup()  # makes sure things like exception autocapture are initialised
     start_http_server(int(os.getenv("CELERY_METRICS_PORT", "8001")))
@@ -109,13 +108,9 @@ def on_worker_start(**kwargs) -> None:
 # Set up clickhouse query instrumentation
 @task_prerun.connect
 def prerun_signal_handler(task_id, task, **kwargs):
-    from statshog.defaults.django import statsd
-
-    from posthog.clickhouse.client.connection import (
-        Workload,
-        set_default_clickhouse_workload_type,
-    )
+    from posthog.clickhouse.client.connection import Workload, set_default_clickhouse_workload_type
     from posthog.clickhouse.query_tagging import tag_queries
+    from statshog.defaults.django import statsd
 
     statsd.incr("celery_tasks_metrics.pre_run", tags={"name": task.name})
     tag_queries(kind="celery", id=task.name)

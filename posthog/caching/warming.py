@@ -1,28 +1,26 @@
 import itertools
-from datetime import timedelta, UTC, datetime
 from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
 from typing import Optional
 
-from posthog.hogql_queries.query_cache_base import QueryCacheManagerBase
-from posthog.schema_migrations.upgrade_manager import upgrade_query
+import posthoganalytics
 import structlog
 from celery import shared_task
 from celery.canvas import chain
 from django.db.models import Q
-from prometheus_client import Counter, Gauge
-from posthog.exceptions_capture import capture_exception
-
 from posthog.api.services.query import process_query_dict
 from posthog.caching.utils import largest_teams
-from posthog.clickhouse.query_tagging import tag_queries, Feature
+from posthog.clickhouse.query_tagging import Feature, tag_queries
 from posthog.errors import CHQueryErrorTooManySimultaneousQueries
+from posthog.exceptions_capture import capture_exception
 from posthog.hogql.constants import LimitContext
+from posthog.hogql_queries.query_cache_base import QueryCacheManagerBase
 from posthog.hogql_queries.query_runner import ExecutionMode
-from posthog.models import Team, Insight, DashboardTile
-from posthog.tasks.utils import CeleryQueue
+from posthog.models import DashboardTile, Insight, Team
 from posthog.ph_client import ph_scoped_capture
-import posthoganalytics
-
+from posthog.schema_migrations.upgrade_manager import upgrade_query
+from posthog.tasks.utils import CeleryQueue
+from prometheus_client import Counter, Gauge
 
 logger = structlog.get_logger(__name__)
 
@@ -240,6 +238,7 @@ def warm_insight_cache_task(insight_id: int, dashboard_id: Optional[int]):
                     event="cache warming - warming insight",
                     properties={
                         "insight_id": insight.pk,
+                        "insight_short_id": insight.short_id,
                         "dashboard_id": dashboard_id,
                         "is_cached": is_cached,
                         "team_id": insight.team_id,

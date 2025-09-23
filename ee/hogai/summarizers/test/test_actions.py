@@ -1,9 +1,10 @@
 import json
 from textwrap import dedent
 
-from ee.hogai.summarizers.actions import ActionSummarizer
 from posthog.models import Action
 from posthog.test.base import BaseTest
+
+from ee.hogai.summarizers.actions import ActionSummarizer
 
 
 class TestActionSummarizer(BaseTest):

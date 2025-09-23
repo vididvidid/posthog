@@ -1,20 +1,15 @@
-from rest_framework import decorators, exceptions, viewsets
-from rest_framework_extensions.routers import NestedRegistryItem
-
-
-from .oauth_application import OAuthApplicationPublicMetadataViewSet
 import products.data_warehouse.backend.api.fix_hogql as fix_hogql
 import products.early_access_features.backend.api as early_access_feature
-from products.user_interviews.backend.api import UserInterviewViewSet
-from products.llm_observability.api import LLMProxyViewSet
-from products.messaging.backend.api import MessageTemplatesViewSet, MessageCategoryViewSet, MessagePreferencesViewSet
+import products.links.backend.api as link
 import products.logs.backend.api as logs
-from posthog.api import data_color_theme, hog_flow, metalytics, project, my_notifications
-from posthog.api.wizard import http as wizard
+import products.revenue_analytics.backend.api as revenue_analytics
+import products.tasks.backend.api as tasks
+from posthog.api import data_color_theme, hog_flow, metalytics, my_notifications, named_query, project
+from posthog.api.batch_imports import BatchImportViewSet
 from posthog.api.csp_reporting import CSPReportingViewSet
 from posthog.api.routing import DefaultRouterPlusPlus
+from posthog.api.wizard import http as wizard
 from posthog.batch_exports import http as batch_exports
-from posthog.api.batch_imports import BatchImportViewSet
 from posthog.settings import EE_AVAILABLE
 from posthog.warehouse.api import (
     data_modeling_job,
@@ -28,18 +23,22 @@ from posthog.warehouse.api import (
     table,
     view_link,
 )
-import products.revenue_analytics.backend.api as revenue_analytics
 from posthog.warehouse.api.lineage import LineageViewSet
-import products.links.backend.api as link
+from products.llm_analytics.backend.api import DatasetItemViewSet, DatasetViewSet, LLMProxyViewSet
+from products.messaging.backend.api import MessageCategoryViewSet, MessagePreferencesViewSet, MessageTemplatesViewSet
+from products.user_interviews.backend.api import UserInterviewViewSet
+from rest_framework import decorators, exceptions, viewsets
+from rest_framework_extensions.routers import NestedRegistryItem
+
+from ee.api.vercel import vercel_installation, vercel_product, vercel_resource
 
 from ..heatmaps.heatmaps_api import HeatmapViewSet, LegacyHeatmapViewSet
 from ..session_recordings.session_recording_api import SessionRecordingViewSet
-from ..session_recordings.session_recording_playlist_api import (
-    SessionRecordingPlaylistViewSet,
-)
+from ..session_recordings.session_recording_playlist_api import SessionRecordingPlaylistViewSet
 from ..taxonomy import property_definition_api
 from . import (
     activity_log,
+    advanced_activity_logs,
     alert,
     annotation,
     app_metrics,
@@ -82,11 +81,12 @@ from . import (
     user,
     web_vitals,
 )
-from .file_system import file_system, file_system_shortcut, persisted_folder
 from .dashboards import dashboard, dashboard_templates
 from .data_management import DataManagementViewSet
-from .session import SessionViewSet
 from .external_web_analytics import http as external_web_analytics
+from .file_system import file_system, file_system_shortcut, persisted_folder
+from .oauth_application import OAuthApplicationPublicMetadataViewSet
+from .session import SessionViewSet
 
 
 @decorators.api_view(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"])
@@ -183,6 +183,12 @@ projects_router.register(
     ["project_id"],
 )
 projects_router.register(
+    r"advanced_activity_logs",
+    advanced_activity_logs.AdvancedActivityLogsViewSet,
+    "project_advanced_activity_logs",
+    ["project_id"],
+)
+projects_router.register(
     r"my_notifications",
     my_notifications.MyNotificationsViewSet,
     "project_notifications",
@@ -199,6 +205,17 @@ project_features_router = projects_router.register(
     early_access_feature.EarlyAccessFeatureViewSet,
     "project_early_access_feature",
     ["project_id"],
+)
+
+register_grandfathered_environment_nested_viewset(r"tasks", tasks.TaskViewSet, "environment_tasks", ["team_id"])
+register_grandfathered_environment_nested_viewset(
+    r"workflows", tasks.TaskWorkflowViewSet, "environment_workflows", ["team_id"]
+)
+register_grandfathered_environment_nested_viewset(
+    r"workflow-stages", tasks.WorkflowStageViewSet, "environment_workflow_stages", ["team_id"]
+)
+register_grandfathered_environment_nested_viewset(
+    r"agents", tasks.AgentDefinitionViewSet, "environment_agents", ["team_id"]
 )
 projects_router.register(r"surveys", survey.SurveyViewSet, "project_surveys", ["project_id"])
 projects_router.register(
@@ -338,6 +355,13 @@ projects_router.register(
     ["project_id"],
 )
 register_grandfathered_environment_nested_viewset(r"query", query.QueryViewSet, "environment_query", ["team_id"])
+
+register_grandfathered_environment_nested_viewset(
+    r"named_query",
+    named_query.NamedQueryViewSet,
+    "environment_named_query",
+    ["team_id"],
+)
 
 # External data resources
 register_grandfathered_environment_nested_viewset(
@@ -510,22 +534,16 @@ register_grandfathered_environment_nested_viewset(
     ["team_id"],
 )
 
-
 register_grandfathered_environment_nested_viewset(r"heatmaps", HeatmapViewSet, "environment_heatmaps", ["team_id"])
 register_grandfathered_environment_nested_viewset(r"sessions", SessionViewSet, "environment_sessions", ["team_id"])
 
 if EE_AVAILABLE:
     from ee.clickhouse.views.experiment_holdouts import ExperimentHoldoutViewSet
-    from ee.clickhouse.views.experiment_saved_metrics import (
-        ExperimentSavedMetricViewSet,
-    )
+    from ee.clickhouse.views.experiment_saved_metrics import ExperimentSavedMetricViewSet
     from ee.clickhouse.views.experiments import EnterpriseExperimentsViewSet
     from ee.clickhouse.views.groups import GroupsTypesViewSet, GroupsViewSet, GroupUsageMetricViewSet
     from ee.clickhouse.views.insights import EnterpriseInsightsViewSet
-    from ee.clickhouse.views.person import (
-        EnterprisePersonViewSet,
-        LegacyEnterprisePersonViewSet,
-    )
+    from ee.clickhouse.views.person import EnterprisePersonViewSet, LegacyEnterprisePersonViewSet
 
     projects_router.register(r"experiments", EnterpriseExperimentsViewSet, "project_experiments", ["project_id"])
     projects_router.register(
@@ -548,13 +566,29 @@ if EE_AVAILABLE:
         r"persons", EnterprisePersonViewSet, "environment_persons", ["team_id"]
     )
     router.register(r"person", LegacyEnterprisePersonViewSet, "persons")
+    vercel_installations_router = router.register(
+        r"vercel/v1/installations",
+        vercel_installation.VercelInstallationViewSet,
+        "vercel_installations",
+    )
+    vercel_installations_router.register(
+        r"resources",
+        vercel_resource.VercelResourceViewSet,
+        "vercel_installation_resources",
+        ["installation_id"],
+    )
+    router.register(
+        r"vercel/v1/products",
+        vercel_product.VercelProductViewSet,
+        "vercel_products",
+    )
+
 else:
     environment_insights_router, legacy_project_insights_router = register_grandfathered_environment_nested_viewset(
         r"insights", InsightViewSet, "environment_insights", ["team_id"]
     )
     register_grandfathered_environment_nested_viewset(r"persons", PersonViewSet, "environment_persons", ["team_id"])
     router.register(r"person", LegacyPersonViewSet, "persons")
-
 
 environment_dashboards_router.register(
     r"sharing",
@@ -647,6 +681,13 @@ environments_router.register(
     r"error_tracking/suppression_rules",
     error_tracking.ErrorTrackingSuppressionRuleViewSet,
     "project_error_tracking_suppression_rule",
+    ["team_id"],
+)
+
+environments_router.register(
+    r"error_tracking/fingerprints",
+    error_tracking.ErrorTrackingFingerprintViewSet,
+    "project_error_tracking_fingerprint",
     ["team_id"],
 )
 
@@ -810,4 +851,18 @@ projects_router.register(
     flag_value.FlagValueViewSet,
     "project_flag_value",
     ["project_id"],
+)
+
+register_grandfathered_environment_nested_viewset(
+    r"datasets",
+    DatasetViewSet,
+    "environment_datasets",
+    ["team_id"],
+)
+
+register_grandfathered_environment_nested_viewset(
+    r"dataset_items",
+    DatasetItemViewSet,
+    "environment_dataset_items",
+    ["team_id"],
 )

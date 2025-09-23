@@ -1,10 +1,7 @@
-from unittest import TestCase
 from google.genai.types import Type
+from unittest import TestCase
 
-from ..utils import (
-    convert_schema,
-    json_schema_to_gemini_schema,
-)
+from ..utils import convert_schema, json_schema_to_gemini_schema
 
 
 class TestSchemaConversion(TestCase):

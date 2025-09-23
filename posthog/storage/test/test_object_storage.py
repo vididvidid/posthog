@@ -1,11 +1,8 @@
 import re
 import uuid
-from unittest.mock import patch
-from unittest.mock import MagicMock
 
 from boto3 import resource
 from botocore.client import Config
-
 from posthog.settings import (
     OBJECT_STORAGE_ACCESS_KEY_ID,
     OBJECT_STORAGE_BUCKET,
@@ -13,16 +10,17 @@ from posthog.settings import (
     OBJECT_STORAGE_SECRET_ACCESS_KEY,
 )
 from posthog.storage.object_storage import (
+    ObjectStorage,
+    copy_objects,
+    get_presigned_post,
+    get_presigned_url,
     health_check,
+    list_objects,
     read,
     write,
-    get_presigned_url,
-    get_presigned_post,
-    list_objects,
-    copy_objects,
-    ObjectStorage,
 )
 from posthog.test.base import APIBaseTest
+from unittest.mock import MagicMock, patch
 
 TEST_BUCKET = "test_storage_bucket"
 

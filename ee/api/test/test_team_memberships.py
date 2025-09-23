@@ -1,8 +1,8 @@
+from posthog.models import OrganizationMembership, Team, User
 from rest_framework import status
 
 from ee.api.test.base import APILicensedTest
 from ee.models.explicit_team_membership import ExplicitTeamMembership
-from posthog.models import OrganizationMembership, Team, User
 
 
 class TestTeamMembershipsAPI(APILicensedTest):

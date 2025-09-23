@@ -1,11 +1,9 @@
-from typing import Any, Optional, cast
 from datetime import datetime, timedelta
-from unittest import skip
+from typing import Any, Optional, cast
 from uuid import UUID
 
 from django.utils import timezone
 from freezegun import freeze_time
-
 from posthog.constants import INSIGHT_FUNNELS
 from posthog.hogql_queries.actors_query_runner import ActorsQueryRunner
 from posthog.hogql_queries.legacy_compatibility.filter_to_query import filter_to_query
@@ -19,9 +17,7 @@ from posthog.schema import (
     FunnelsActorsQuery,
     FunnelsQuery,
 )
-from posthog.session_recordings.queries.test.session_replay_sql import (
-    produce_replay_summary,
-)
+from posthog.session_recordings.queries.test.session_replay_sql import produce_replay_summary
 from posthog.test.base import (
     APIBaseTest,
     ClickhouseTestMixin,
@@ -30,6 +26,7 @@ from posthog.test.base import (
     snapshot_clickhouse_queries,
 )
 from posthog.test.test_journeys import journeys_for
+from unittest import skip
 
 FORMAT_TIME = "%Y-%m-%d 00:00:00"
 MAX_STEP_COLUMN = 0

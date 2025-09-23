@@ -1,11 +1,11 @@
 import numpy as np
-from scipy import stats
-from posthog.schema import ExperimentVariantFunnelsBaseStats, ExperimentSignificanceCode
 from posthog.hogql_queries.experiments import (
+    EXPECTED_LOSS_SIGNIFICANCE_LEVEL,
     FF_DISTRIBUTION_THRESHOLD,
     MIN_PROBABILITY_FOR_SIGNIFICANCE,
-    EXPECTED_LOSS_SIGNIFICANCE_LEVEL,
 )
+from posthog.schema import ExperimentSignificanceCode, ExperimentVariantFunnelsBaseStats
+from scipy import stats
 from scipy.stats import betabinom
 
 ALPHA_PRIOR = 1

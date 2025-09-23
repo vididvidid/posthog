@@ -1,15 +1,16 @@
 from typing import cast
+
 from posthog.schema import (
     ExternalDataSourceType as SchemaExternalDataSourceType,
     SourceConfig,
     SourceFieldInputConfig,
     SourceFieldInputConfigType,
 )
-from posthog.temporal.data_imports.sources.doit.doit import doit_source, doit_list_reports, DOIT_INCREMENTAL_FIELDS
+from posthog.temporal.data_imports.pipelines.pipeline.typings import SourceInputs, SourceResponse
 from posthog.temporal.data_imports.sources.common.base import BaseSource, FieldType
 from posthog.temporal.data_imports.sources.common.registry import SourceRegistry
 from posthog.temporal.data_imports.sources.common.schema import SourceSchema
-from posthog.temporal.data_imports.pipelines.pipeline.typings import SourceInputs, SourceResponse
+from posthog.temporal.data_imports.sources.doit.doit import DOIT_INCREMENTAL_FIELDS, doit_list_reports, doit_source
 from posthog.temporal.data_imports.sources.generated_configs import DoItSourceConfig
 from posthog.warehouse.types import ExternalDataSourceType
 
@@ -20,7 +21,7 @@ class DoItSource(BaseSource[DoItSourceConfig]):
     def source_type(self) -> ExternalDataSourceType:
         return ExternalDataSourceType.DOIT
 
-    def get_schemas(self, config: DoItSourceConfig, team_id: int) -> list[SourceSchema]:
+    def get_schemas(self, config: DoItSourceConfig, team_id: int, with_counts: bool = False) -> list[SourceSchema]:
         reports = doit_list_reports(config)
 
         return [
@@ -49,7 +50,8 @@ class DoItSource(BaseSource[DoItSourceConfig]):
         return SourceConfig(
             name=SchemaExternalDataSourceType.DO_IT,
             label="DoIt",
-            caption="",
+            iconPath="/static/services/doit.svg",
+            docsUrl="https://posthog.com/docs/cdp/sources/doit",
             fields=cast(
                 list[FieldType],
                 [

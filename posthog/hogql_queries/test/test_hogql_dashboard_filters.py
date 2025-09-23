@@ -1,14 +1,7 @@
 from typing import Optional
+
 from posthog.hogql_queries.hogql_query_runner import HogQLQueryRunner
-
-from posthog.schema import (
-    DashboardFilter,
-    DateRange,
-    EventPropertyFilter,
-    HogQLFilters,
-    HogQLQuery,
-)
-
+from posthog.schema import DashboardFilter, DateRange, EventPropertyFilter, HogQLFilters, HogQLQuery
 from posthog.test.base import BaseTest
 
 

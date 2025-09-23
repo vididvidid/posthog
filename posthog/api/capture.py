@@ -1,20 +1,19 @@
-from concurrent.futures import ThreadPoolExecutor, Future
-
-import structlog
-from requests import Response, Session
-from requests.adapters import HTTPAdapter, Retry
-from datetime import datetime, UTC
-from prometheus_client import Counter
+from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import UTC, datetime
 from typing import Any, Optional
 
+import structlog
 from posthog.logging.timing import timed
 from posthog.settings.ingestion import (
+    CAPTURE_INTERNAL_MAX_WORKERS,
     CAPTURE_INTERNAL_URL,
     CAPTURE_REPLAY_INTERNAL_URL,
-    CAPTURE_INTERNAL_MAX_WORKERS,
     NEW_ANALYTICS_CAPTURE_ENDPOINT,
     REPLAY_CAPTURE_ENDPOINT,
 )
+from prometheus_client import Counter
+from requests import Response, Session
+from requests.adapters import HTTPAdapter, Retry
 
 logger = structlog.get_logger(__name__)
 

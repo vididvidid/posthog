@@ -1,26 +1,26 @@
-import unittest
+import math
 from typing import Optional
 
+import unittest
 from freezegun import freeze_time
-import math
 from posthog.hogql_queries.web_analytics.stats_table import WebStatsTableQueryRunner
 from posthog.models import Action, Cohort, Element
 from posthog.models.utils import uuid7
 from posthog.schema import (
-    DateRange,
-    CompareFilter,
-    WebStatsTableQuery,
-    WebStatsBreakdown,
-    EventPropertyFilter,
-    PropertyOperator,
-    SessionTableVersion,
-    HogQLQueryModifiers,
-    CustomEventConversionGoal,
     ActionConversionGoal,
     BounceRatePageViewMode,
-    WebAnalyticsOrderByFields,
-    WebAnalyticsOrderByDirection,
+    CompareFilter,
+    CustomEventConversionGoal,
+    DateRange,
+    EventPropertyFilter,
+    HogQLQueryModifiers,
+    PropertyOperator,
     SessionPropertyFilter,
+    SessionTableVersion,
+    WebAnalyticsOrderByDirection,
+    WebAnalyticsOrderByFields,
+    WebStatsBreakdown,
+    WebStatsTableQuery,
 )
 from posthog.test.base import (
     APIBaseTest,

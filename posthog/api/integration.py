@@ -1,35 +1,33 @@
 import json
-
 import os
 from typing import Any
-
 from urllib.parse import urlencode
+
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from rest_framework import mixins, serializers, viewsets
-from posthog.api.utils import action
-from rest_framework.exceptions import ValidationError
-from rest_framework.request import Request
-from rest_framework.response import Response
-from django.core.cache import cache
 from django.utils import timezone
-
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.api.shared import UserBasicSerializer
+from posthog.api.utils import action
 from posthog.models.instance_setting import get_instance_setting
 from posthog.models.integration import (
-    Integration,
-    OauthIntegration,
-    SlackIntegration,
-    LinearIntegration,
-    GoogleCloudIntegration,
-    GoogleAdsIntegration,
-    LinkedInAdsIntegration,
     ClickUpIntegration,
     EmailIntegration,
     GitHubIntegration,
+    GoogleAdsIntegration,
+    GoogleCloudIntegration,
+    Integration,
+    LinearIntegration,
+    LinkedInAdsIntegration,
+    OauthIntegration,
+    SlackIntegration,
     TwilioIntegration,
 )
+from rest_framework import mixins, serializers, viewsets
+from rest_framework.exceptions import ValidationError
+from rest_framework.request import Request
+from rest_framework.response import Response
 
 
 class NativeEmailIntegrationSerializer(serializers.Serializer):
@@ -251,7 +249,7 @@ class IntegrationViewSet(
 
         conversion_actions = google_ads.list_google_ads_conversion_actions(customer_id, parent_id)
 
-        if len(conversion_actions) == 0:
+        if not conversion_actions or "results" not in conversion_actions[0]:
             return Response({"conversionActions": []})
 
         conversion_actions = [

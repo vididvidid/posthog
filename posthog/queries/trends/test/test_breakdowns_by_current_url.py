@@ -3,11 +3,7 @@ from typing import Optional
 
 from posthog.models import Filter
 from posthog.queries.trends.trends import Trends
-from posthog.test.base import (
-    APIBaseTest,
-    ClickhouseTestMixin,
-    snapshot_clickhouse_queries,
-)
+from posthog.test.base import APIBaseTest, ClickhouseTestMixin, snapshot_clickhouse_queries
 from posthog.test.test_journeys import journeys_for
 
 

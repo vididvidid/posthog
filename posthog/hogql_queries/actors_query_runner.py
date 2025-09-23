@@ -1,8 +1,9 @@
 import itertools
-from typing import Any, Optional
-from collections.abc import Sequence, Iterator
 import re
+from collections.abc import Iterator, Sequence
+from typing import Any, Optional
 
+from posthog.api.person import PERSON_DEFAULT_DISPLAY_NAME_PROPERTIES
 from posthog.hogql import ast
 from posthog.hogql.constants import HogQLGlobalSettings, HogQLQuerySettings
 from posthog.hogql.context import HogQLContext
@@ -10,11 +11,11 @@ from posthog.hogql.parser import parse_expr, parse_order_expr
 from posthog.hogql.printer import print_ast
 from posthog.hogql.property import has_aggregation
 from posthog.hogql.resolver_utils import extract_select_queries
-from posthog.hogql_queries.actor_strategies import ActorStrategy, PersonStrategy, GroupStrategy
+from posthog.hogql_queries.actor_strategies import ActorStrategy, GroupStrategy, PersonStrategy
 from posthog.hogql_queries.insights.funnels.funnels_query_runner import FunnelsQueryRunner
 from posthog.hogql_queries.insights.insight_actors_query_runner import InsightActorsQueryRunner
 from posthog.hogql_queries.insights.paginators import HogQLHasMorePaginator
-from posthog.hogql_queries.query_runner import AnalyticsQueryRunner, get_query_runner, QueryRunner
+from posthog.hogql_queries.query_runner import AnalyticsQueryRunner, QueryRunner, get_query_runner
 from posthog.schema import (
     ActorsQuery,
     ActorsQueryResponse,
@@ -23,12 +24,10 @@ from posthog.schema import (
     InsightActorsQuery,
     TrendsQuery,
 )
-from posthog.api.person import PERSON_DEFAULT_DISPLAY_NAME_PROPERTIES
 
 
-class ActorsQueryRunner(AnalyticsQueryRunner):
+class ActorsQueryRunner(AnalyticsQueryRunner[ActorsQueryResponse]):
     query: ActorsQuery
-    response: ActorsQueryResponse
     cached_response: CachedActorsQueryResponse
 
     def __init__(self, *args, **kwargs):

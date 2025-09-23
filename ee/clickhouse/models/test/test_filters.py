@@ -9,8 +9,10 @@ from posthog.models.event.sql import GET_EVENTS_WITH_PROPERTIES
 from posthog.models.event.util import ClickhouseEventSerializer
 from posthog.models.filters import Filter
 from posthog.models.filters.retention_filter import RetentionFilter
-from posthog.models.filters.test.test_filter import TestFilter as PGTestFilters
-from posthog.models.filters.test.test_filter import property_to_Q_test_factory
+from posthog.models.filters.test.test_filter import (
+    TestFilter as PGTestFilters,
+    property_to_Q_test_factory,
+)
 from posthog.models.property.util import parse_prop_grouped_clauses
 from posthog.queries.util import PersonPropertiesMode
 from posthog.test.base import ClickhouseTestMixin, _create_event, _create_person

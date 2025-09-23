@@ -1,4 +1,5 @@
 from typing import TypeAlias
+
 from posthog.hogql import ast
 from posthog.hogql.property import property_to_expr
 from posthog.hogql_queries.insights.query_context import QueryContext

@@ -1,9 +1,9 @@
-from typing import Optional, Any
-from posthog.hogql.parser import parse_select
-from posthog.hogql.query import execute_hogql_query
+from typing import Any, Optional
+
 from posthog.hogql import ast
-from posthog.hogql.parser import parse_expr
+from posthog.hogql.parser import parse_expr, parse_select
 from posthog.hogql.property import action_to_expr
+from posthog.hogql.query import execute_hogql_query
 from posthog.hogql.visitor import clear_locations
 from posthog.models import Action
 from posthog.test.base import BaseTest, _create_event

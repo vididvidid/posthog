@@ -1,5 +1,4 @@
 import pytest
-
 from posthog.clickhouse.client import sync_execute
 from posthog.models.async_deletion.delete_person import remove_deleted_person_data
 from posthog.models.person.util import create_person

@@ -1,17 +1,14 @@
+import datetime as dt
 import inspect
-import math
 import re
 import resource
 import threading
 import time
 import uuid
-import unittest
 from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from functools import wraps
-import datetime as dt
 from typing import Any, Optional, Union
-from unittest.mock import patch
 
 import freezegun
 
@@ -20,14 +17,13 @@ import freezegun
 import pendulum  # noqa F401
 import pytest
 import sqlparse
+import unittest
 from django.apps import apps
 from django.core.cache import cache
 from django.db import connection, connections
 from django.db.migrations.executor import MigrationExecutor
 from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
-from rest_framework.test import APITestCase as DRFTestCase
-
 from posthog import rate_limit, redis
 from posthog.clickhouse.adhoc_events_deletion import (
     ADHOC_EVENTS_DELETION_TABLE_SQL,
@@ -36,8 +32,8 @@ from posthog.clickhouse.adhoc_events_deletion import (
 from posthog.clickhouse.client import sync_execute
 from posthog.clickhouse.client.connection import get_client_from_pool
 from posthog.clickhouse.custom_metrics import (
-    CREATE_CUSTOM_METRICS_COUNTERS_VIEW,
     CREATE_CUSTOM_METRICS_COUNTER_EVENTS_TABLE,
+    CREATE_CUSTOM_METRICS_COUNTERS_VIEW,
     CUSTOM_METRICS_EVENTS_RECENT_LAG_VIEW,
     CUSTOM_METRICS_REPLICATION_QUEUE_VIEW,
     CUSTOM_METRICS_TEST_VIEW,
@@ -46,7 +42,12 @@ from posthog.clickhouse.custom_metrics import (
 )
 from posthog.clickhouse.materialized_columns import MaterializedColumn
 from posthog.clickhouse.plugin_log_entries import TRUNCATE_PLUGIN_LOG_ENTRIES_TABLE_SQL
-from posthog.clickhouse.query_log_archive import QUERY_LOG_ARCHIVE_TABLE_SQL, QUERY_LOG_ARCHIVE_MV
+from posthog.clickhouse.query_log_archive import (
+    QUERY_LOG_ARCHIVE_DATA_TABLE,
+    QUERY_LOG_ARCHIVE_MV,
+    QUERY_LOG_ARCHIVE_NEW_MV_SQL,
+    QUERY_LOG_ARCHIVE_NEW_TABLE_SQL,
+)
 from posthog.cloud_utils import TEST_clear_instance_license_cache
 from posthog.models import Dashboard, DashboardTile, Insight, Organization, Team, User
 from posthog.models.channel_type.sql import (
@@ -59,12 +60,19 @@ from posthog.models.channel_type.sql import (
 from posthog.models.cohort.sql import TRUNCATE_COHORTPEOPLE_TABLE_SQL
 from posthog.models.event.sql import (
     DISTRIBUTED_EVENTS_TABLE_SQL,
-    DROP_EVENTS_TABLE_SQL,
     DROP_DISTRIBUTED_EVENTS_TABLE_SQL,
+    DROP_EVENTS_TABLE_SQL,
     EVENTS_TABLE_SQL,
     TRUNCATE_EVENTS_RECENT_TABLE_SQL,
 )
 from posthog.models.event.util import bulk_create_events
+from posthog.models.exchange_rate.sql import (
+    DROP_EXCHANGE_RATE_DICTIONARY_SQL,
+    DROP_EXCHANGE_RATE_TABLE_SQL,
+    EXCHANGE_RATE_DATA_BACKFILL_SQL,
+    EXCHANGE_RATE_DICTIONARY_SQL,
+    EXCHANGE_RATE_TABLE_SQL,
+)
 from posthog.models.group.sql import TRUNCATE_GROUPS_TABLE_SQL
 from posthog.models.instance_setting import get_instance_setting
 from posthog.models.organization import OrganizationMembership
@@ -73,15 +81,36 @@ from posthog.models.person.sql import (
     DROP_PERSON_TABLE_SQL,
     PERSONS_TABLE_SQL,
     TRUNCATE_PERSON_DISTINCT_ID2_TABLE_SQL,
+    TRUNCATE_PERSON_DISTINCT_ID_OVERRIDES_TABLE_SQL,
     TRUNCATE_PERSON_DISTINCT_ID_TABLE_SQL,
     TRUNCATE_PERSON_STATIC_COHORT_TABLE_SQL,
-    TRUNCATE_PERSON_DISTINCT_ID_OVERRIDES_TABLE_SQL,
 )
 from posthog.models.person.util import bulk_create_persons, create_person
 from posthog.models.project import Project
-from posthog.models.property_definition import (
-    DROP_PROPERTY_DEFINITIONS_TABLE_SQL,
-    PROPERTY_DEFINITIONS_TABLE_SQL,
+from posthog.models.property_definition import DROP_PROPERTY_DEFINITIONS_TABLE_SQL, PROPERTY_DEFINITIONS_TABLE_SQL
+from posthog.models.raw_sessions.sql import (
+    DISTRIBUTED_RAW_SESSIONS_TABLE_SQL,
+    DROP_RAW_SESSION_DISTRIBUTED_TABLE_SQL,
+    DROP_RAW_SESSION_MATERIALIZED_VIEW_SQL,
+    DROP_RAW_SESSION_SHARDED_TABLE_SQL,
+    DROP_RAW_SESSION_VIEW_SQL,
+    DROP_RAW_SESSION_WRITABLE_TABLE_SQL,
+    RAW_SESSIONS_CREATE_OR_REPLACE_VIEW_SQL,
+    RAW_SESSIONS_TABLE_MV_SQL,
+    RAW_SESSIONS_TABLE_SQL,
+    WRITABLE_RAW_SESSIONS_TABLE_SQL,
+)
+from posthog.models.raw_sessions.sql_v3 import (
+    DISTRIBUTED_RAW_SESSIONS_TABLE_SQL_V3,
+    DROP_RAW_SESSION_DISTRIBUTED_TABLE_SQL_V3,
+    DROP_RAW_SESSION_MATERIALIZED_VIEW_SQL_V3,
+    DROP_RAW_SESSION_SHARDED_TABLE_SQL_V3,
+    DROP_RAW_SESSION_VIEW_SQL_V3,
+    DROP_RAW_SESSION_WRITABLE_TABLE_SQL_V3,
+    RAW_SESSIONS_CREATE_OR_REPLACE_VIEW_SQL_V3,
+    RAW_SESSIONS_TABLE_MV_SQL_V3,
+    RAW_SESSIONS_TABLE_SQL_V3,
+    WRITABLE_RAW_SESSIONS_TABLE_SQL_V3,
 )
 from posthog.models.sessions.sql import (
     DISTRIBUTED_SESSIONS_TABLE_SQL,
@@ -92,37 +121,29 @@ from posthog.models.sessions.sql import (
     SESSIONS_TABLE_SQL,
     SESSIONS_VIEW_SQL,
 )
-from posthog.models.exchange_rate.sql import (
-    EXCHANGE_RATE_DICTIONARY_SQL,
-    EXCHANGE_RATE_TABLE_SQL,
-    DROP_EXCHANGE_RATE_TABLE_SQL,
-    DROP_EXCHANGE_RATE_DICTIONARY_SQL,
-    EXCHANGE_RATE_DATA_BACKFILL_SQL,
+from posthog.models.web_preaggregated.sql import (
+    DROP_WEB_BOUNCES_DAILY_SQL,
+    DROP_WEB_BOUNCES_HOURLY_SQL,
+    DROP_WEB_BOUNCES_SQL,
+    DROP_WEB_BOUNCES_STAGING_SQL,
+    DROP_WEB_STATS_DAILY_SQL,
+    DROP_WEB_STATS_HOURLY_SQL,
+    DROP_WEB_STATS_SQL,
+    DROP_WEB_STATS_STAGING_SQL,
+    WEB_BOUNCES_DAILY_SQL,
+    WEB_BOUNCES_HOURLY_SQL,
+    WEB_BOUNCES_SQL,
+    WEB_STATS_COMBINED_VIEW_SQL,
+    WEB_STATS_DAILY_SQL,
+    WEB_STATS_HOURLY_SQL,
+    WEB_STATS_SQL,
 )
 from posthog.models.web_preaggregated.team_selection import (
-    WEB_PRE_AGGREGATED_TEAM_SELECTION_TABLE_SQL,
-    WEB_PRE_AGGREGATED_TEAM_SELECTION_DICTIONARY_SQL,
-    WEB_PRE_AGGREGATED_TEAM_SELECTION_DATA_SQL,
-    DROP_WEB_PRE_AGGREGATED_TEAM_SELECTION_TABLE_SQL,
     DROP_WEB_PRE_AGGREGATED_TEAM_SELECTION_DICTIONARY_SQL,
-)
-from posthog.models.raw_sessions.sql import (
-    DISTRIBUTED_RAW_SESSIONS_TABLE_SQL,
-    DROP_RAW_SESSION_MATERIALIZED_VIEW_SQL,
-    DROP_RAW_SESSION_TABLE_SQL,
-    DROP_RAW_SESSION_VIEW_SQL,
-    RAW_SESSIONS_TABLE_MV_SQL,
-    RAW_SESSIONS_CREATE_OR_REPLACE_VIEW_SQL,
-    RAW_SESSIONS_TABLE_SQL,
-)
-from posthog.models.web_preaggregated.sql import (
-    WEB_BOUNCES_HOURLY_SQL,
-    WEB_STATS_HOURLY_SQL,
-    WEB_STATS_DAILY_SQL,
-    WEB_BOUNCES_DAILY_SQL,
-    WEB_STATS_COMBINED_VIEW_SQL,
-    WEB_STATS_SQL,
-    WEB_BOUNCES_SQL,
+    DROP_WEB_PRE_AGGREGATED_TEAM_SELECTION_TABLE_SQL,
+    WEB_PRE_AGGREGATED_TEAM_SELECTION_DATA_SQL,
+    WEB_PRE_AGGREGATED_TEAM_SELECTION_DICTIONARY_SQL,
+    WEB_PRE_AGGREGATED_TEAM_SELECTION_TABLE_SQL,
 )
 from posthog.session_recordings.sql.session_recording_event_sql import (
     DISTRIBUTED_SESSION_RECORDING_EVENTS_TABLE_SQL,
@@ -134,12 +155,9 @@ from posthog.session_recordings.sql.session_replay_event_sql import (
     DROP_SESSION_REPLAY_EVENTS_TABLE_SQL,
     SESSION_REPLAY_EVENTS_TABLE_SQL,
 )
-from posthog.session_recordings.sql.session_replay_event_v2_test_sql import (
-    SESSION_REPLAY_EVENTS_V2_TEST_DISTRIBUTED_TABLE_SQL,
-    DROP_SESSION_REPLAY_EVENTS_V2_TEST_TABLE_SQL,
-    SESSION_REPLAY_EVENTS_V2_TEST_DATA_TABLE_SQL,
-)
 from posthog.test.assert_faster_than import assert_faster_than
+from rest_framework.test import APITestCase as DRFTestCase
+from unittest.mock import patch
 
 # Make sure freezegun ignores our utils class that times functions
 freezegun.configure(extend_ignore_list=["posthog.test.assert_faster_than"])
@@ -389,14 +407,16 @@ def clean_varying_query_parts(query, replace_all_numbers):
     return query
 
 
-def _setup_test_data(klass):
-    klass.organization = Organization.objects.create(name=klass.CONFIG_ORGANIZATION_NAME)
-    klass.project = Project.objects.create(id=Team.objects.increment_id_sequence(), organization=klass.organization)
-    klass.team = Team.objects.create(
-        id=klass.project.id,
-        project=klass.project,
-        organization=klass.organization,
-        api_token=klass.CONFIG_API_TOKEN,
+def setup_test_organization_team_and_user(
+    organization_name: str, team_api_token: str, user_email: str | None = None, user_password: str | None = None
+) -> tuple[Organization, Project, Team, User | None, OrganizationMembership | None]:
+    organization = Organization.objects.create(name=organization_name)
+    project = Project.objects.create(id=Team.objects.increment_id_sequence(), organization=organization)
+    team = Team.objects.create(
+        id=project.id,
+        project=project,
+        organization=organization,
+        api_token=team_api_token or str(uuid.uuid4()),
         test_account_filters=[
             {
                 "key": "email",
@@ -407,9 +427,27 @@ def _setup_test_data(klass):
         ],
         has_completed_onboarding_for={"product_analytics": True},
     )
-    if klass.CONFIG_EMAIL:
-        klass.user = User.objects.create_and_join(klass.organization, klass.CONFIG_EMAIL, klass.CONFIG_PASSWORD)
-        klass.organization_membership = klass.user.organization_memberships.get()
+    if user_email and user_password:
+        user = User.objects.create_and_join(organization, user_email, user_password)
+        organization_membership = user.organization_memberships.get()
+    else:
+        user = None
+        organization_membership = None
+    return organization, project, team, user, organization_membership
+
+
+def _setup_test_data(klass):
+    organization, project, team, user, organization_membership = setup_test_organization_team_and_user(
+        organization_name=klass.CONFIG_ORGANIZATION_NAME,
+        team_api_token=klass.CONFIG_API_TOKEN,
+        user_email=klass.CONFIG_EMAIL,
+        user_password=klass.CONFIG_PASSWORD,
+    )
+    klass.organization = organization
+    klass.project = project
+    klass.team = team
+    klass.user = user
+    klass.organization_membership = organization_membership
 
 
 class FuzzyInt(int):
@@ -1138,7 +1176,9 @@ def reset_clickhouse_database() -> None:
     run_clickhouse_statement_in_parallel(
         [
             DROP_RAW_SESSION_MATERIALIZED_VIEW_SQL(),
+            DROP_RAW_SESSION_MATERIALIZED_VIEW_SQL_V3(),
             DROP_RAW_SESSION_VIEW_SQL(),
+            DROP_RAW_SESSION_VIEW_SQL_V3(),
             DROP_SESSION_MATERIALIZED_VIEW_SQL(),
             DROP_SESSION_VIEW_SQL(),
             DROP_CHANNEL_DEFINITION_DICTIONARY_SQL,
@@ -1156,11 +1196,23 @@ def reset_clickhouse_database() -> None:
             DROP_EVENTS_TABLE_SQL(),
             DROP_PERSON_TABLE_SQL,
             DROP_PROPERTY_DEFINITIONS_TABLE_SQL(),
-            DROP_RAW_SESSION_TABLE_SQL(),
+            DROP_RAW_SESSION_SHARDED_TABLE_SQL(),
+            DROP_RAW_SESSION_SHARDED_TABLE_SQL_V3(),
+            DROP_RAW_SESSION_DISTRIBUTED_TABLE_SQL(),
+            DROP_RAW_SESSION_DISTRIBUTED_TABLE_SQL_V3(),
+            DROP_RAW_SESSION_WRITABLE_TABLE_SQL(),
+            DROP_RAW_SESSION_WRITABLE_TABLE_SQL_V3(),
             DROP_SESSION_RECORDING_EVENTS_TABLE_SQL(),
             DROP_SESSION_REPLAY_EVENTS_TABLE_SQL(),
-            DROP_SESSION_REPLAY_EVENTS_V2_TEST_TABLE_SQL(),
             DROP_SESSION_TABLE_SQL(),
+            DROP_WEB_STATS_SQL(),
+            DROP_WEB_BOUNCES_SQL(),
+            DROP_WEB_STATS_DAILY_SQL(),
+            DROP_WEB_BOUNCES_DAILY_SQL(),
+            DROP_WEB_STATS_HOURLY_SQL(),
+            DROP_WEB_BOUNCES_HOURLY_SQL(),
+            DROP_WEB_STATS_STAGING_SQL(),
+            DROP_WEB_BOUNCES_STAGING_SQL(),
             TRUNCATE_COHORTPEOPLE_TABLE_SQL,
             TRUNCATE_EVENTS_RECENT_TABLE_SQL(),
             TRUNCATE_GROUPS_TABLE_SQL,
@@ -1180,10 +1232,12 @@ def reset_clickhouse_database() -> None:
             PERSONS_TABLE_SQL(),
             PROPERTY_DEFINITIONS_TABLE_SQL(),
             RAW_SESSIONS_TABLE_SQL(),
+            RAW_SESSIONS_TABLE_SQL_V3(),
+            WRITABLE_RAW_SESSIONS_TABLE_SQL(),
+            WRITABLE_RAW_SESSIONS_TABLE_SQL_V3(),
             SESSIONS_TABLE_SQL(),
             SESSION_RECORDING_EVENTS_TABLE_SQL(),
             SESSION_REPLAY_EVENTS_TABLE_SQL(),
-            SESSION_REPLAY_EVENTS_V2_TEST_DATA_TABLE_SQL(),
             CREATE_CUSTOM_METRICS_COUNTER_EVENTS_TABLE,
             WEB_BOUNCES_DAILY_SQL(),
             WEB_BOUNCES_HOURLY_SQL(),
@@ -1194,7 +1248,7 @@ def reset_clickhouse_database() -> None:
             WEB_STATS_SQL(table_name="web_pre_aggregated_stats_staging"),
             WEB_BOUNCES_SQL(table_name="web_pre_aggregated_bounces_staging"),
             WEB_PRE_AGGREGATED_TEAM_SELECTION_TABLE_SQL(),
-            QUERY_LOG_ARCHIVE_TABLE_SQL(),
+            QUERY_LOG_ARCHIVE_NEW_TABLE_SQL(table_name=QUERY_LOG_ARCHIVE_DATA_TABLE),
         ]
     )
     run_clickhouse_statement_in_parallel(
@@ -1203,16 +1257,16 @@ def reset_clickhouse_database() -> None:
             EXCHANGE_RATE_DICTIONARY_SQL(),
             DISTRIBUTED_EVENTS_TABLE_SQL(),
             DISTRIBUTED_RAW_SESSIONS_TABLE_SQL(),
+            DISTRIBUTED_RAW_SESSIONS_TABLE_SQL_V3(),
             DISTRIBUTED_SESSIONS_TABLE_SQL(),
             DISTRIBUTED_SESSION_RECORDING_EVENTS_TABLE_SQL(),
             DISTRIBUTED_SESSION_REPLAY_EVENTS_TABLE_SQL(),
-            SESSION_REPLAY_EVENTS_V2_TEST_DISTRIBUTED_TABLE_SQL(),
             CREATE_CUSTOM_METRICS_COUNTERS_VIEW,
             CUSTOM_METRICS_EVENTS_RECENT_LAG_VIEW(),
             CUSTOM_METRICS_TEST_VIEW(),
             CUSTOM_METRICS_REPLICATION_QUEUE_VIEW(),
             WEB_PRE_AGGREGATED_TEAM_SELECTION_DICTIONARY_SQL(),
-            QUERY_LOG_ARCHIVE_MV(),
+            QUERY_LOG_ARCHIVE_NEW_MV_SQL(view_name=QUERY_LOG_ARCHIVE_MV, dest_table=QUERY_LOG_ARCHIVE_DATA_TABLE),
         ]
     )
     run_clickhouse_statement_in_parallel(
@@ -1220,7 +1274,9 @@ def reset_clickhouse_database() -> None:
             CHANNEL_DEFINITION_DATA_SQL(),
             EXCHANGE_RATE_DATA_BACKFILL_SQL(),
             RAW_SESSIONS_TABLE_MV_SQL(),
+            RAW_SESSIONS_TABLE_MV_SQL_V3(),
             RAW_SESSIONS_CREATE_OR_REPLACE_VIEW_SQL(),
+            RAW_SESSIONS_CREATE_OR_REPLACE_VIEW_SQL_V3(),
             SESSIONS_TABLE_MV_SQL(),
             SESSIONS_VIEW_SQL(),
             ADHOC_EVENTS_DELETION_TABLE_SQL(),
@@ -1396,20 +1452,3 @@ def create_person_id_override_by_distinct_id(
         VALUES ({team_id}, '{distinct_id_from}', '{person_id_to}', {version})
     """
     )
-
-
-class NaNMatcher:
-    def __eq__(self, other):
-        try:
-            return math.isnan(other)
-        except (TypeError, ValueError):
-            return False
-
-    def __repr__(self):
-        return "<NaN>"
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-
-NaN = NaNMatcher()

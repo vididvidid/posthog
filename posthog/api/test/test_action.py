@@ -1,16 +1,14 @@
-from unittest.mock import ANY, patch
-
 from freezegun import freeze_time
-from rest_framework import status
-
 from posthog.models import Action, Tag, User
 from posthog.test.base import (
     APIBaseTest,
     ClickhouseTestMixin,
+    FuzzyInt,
     QueryMatchingTest,
     snapshot_postgres_queries_context,
-    FuzzyInt,
 )
+from rest_framework import status
+from unittest.mock import ANY, patch
 
 
 class TestActionApi(ClickhouseTestMixin, APIBaseTest, QueryMatchingTest):

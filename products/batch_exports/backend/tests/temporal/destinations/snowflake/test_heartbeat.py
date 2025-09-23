@@ -7,10 +7,7 @@ TODO: This can be removed once we migrate to the new workflow which doesn't make
 import datetime as dt
 
 import pytest
-
-from products.batch_exports.backend.temporal.destinations.snowflake_batch_export import (
-    SnowflakeHeartbeatDetails,
-)
+from products.batch_exports.backend.temporal.destinations.snowflake_batch_export import SnowflakeHeartbeatDetails
 
 
 @pytest.mark.parametrize(

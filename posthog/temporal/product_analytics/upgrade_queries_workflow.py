@@ -3,9 +3,6 @@ import datetime as dt
 import json
 from typing import Optional
 
-
-from temporalio import workflow
-from temporalio.common import RetryPolicy
 from posthog.temporal.common.base import PostHogWorkflow
 from posthog.temporal.product_analytics.upgrade_queries_activities import (
     GetInsightsToMigrateActivityInputs,
@@ -13,6 +10,8 @@ from posthog.temporal.product_analytics.upgrade_queries_activities import (
     get_insights_to_migrate,
     migrate_insights_batch,
 )
+from temporalio import workflow
+from temporalio.common import RetryPolicy
 
 
 @dataclasses.dataclass

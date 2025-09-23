@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
-from django.urls import reverse
-from freezegun import freeze_time
-from rest_framework import status
 from django.conf import settings
 from django.core.cache import cache
-
+from django.urls import reverse
+from freezegun import freeze_time
 from posthog.api.test.test_organization import create_organization
 from posthog.api.test.test_team import create_team
 from posthog.models import Action, Cohort, Dashboard, FeatureFlag, Insight
@@ -15,6 +12,8 @@ from posthog.models.team import Team
 from posthog.models.user import User
 from posthog.settings import SITE_URL
 from posthog.test.base import APIBaseTest, override_settings
+from rest_framework import status
+from unittest.mock import patch
 
 
 class TestAccessMiddleware(APIBaseTest):
@@ -142,7 +141,7 @@ class TestAutoProjectMiddleware(APIBaseTest):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.base_app_num_queries = 50
+        cls.base_app_num_queries = 51
         # Create another team that the user does have access to
         cls.second_team = create_team(organization=cls.organization, name="Second Life")
 

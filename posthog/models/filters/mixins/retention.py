@@ -4,8 +4,6 @@ from typing import Literal, Optional, Union
 
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
-
 from posthog.constants import (
     PERIOD,
     RETENTION_RECURRING,
@@ -17,13 +15,10 @@ from posthog.constants import (
     TREND_FILTER_TYPE_EVENTS,
 )
 from posthog.models.entity import Entity
-from posthog.models.filters.mixins.common import (
-    BaseParamMixin,
-    DateMixin,
-    EntitiesMixin,
-)
+from posthog.models.filters.mixins.common import BaseParamMixin, DateMixin, EntitiesMixin
 from posthog.models.filters.mixins.utils import cached_property, include_dict
 from posthog.utils import relative_date_parse
+from rest_framework.exceptions import ValidationError
 
 
 class RetentionTypeMixin(BaseParamMixin):

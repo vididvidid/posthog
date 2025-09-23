@@ -3,10 +3,7 @@ import datetime as dt
 import typing
 import uuid
 
-from posthog.batch_exports.service import (
-    BatchExportModel,
-    BatchExportSchema,
-)
+from posthog.batch_exports.service import BatchExportModel, BatchExportSchema
 from posthog.clickhouse import query_tagging
 from posthog.clickhouse.query_tagging import Product
 from posthog.hogql.context import HogQLContext

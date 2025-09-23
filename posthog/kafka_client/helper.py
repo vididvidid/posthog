@@ -7,14 +7,12 @@ import base64
 import json
 import os
 import ssl
-from tempfile import NamedTemporaryFile
-
-from django.conf import settings
-
 from base64 import standard_b64encode
+from tempfile import NamedTemporaryFile
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from django.conf import settings
 from kafka import KafkaConsumer, KafkaProducer
 
 

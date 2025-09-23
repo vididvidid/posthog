@@ -1,9 +1,9 @@
 from langchain_core.runnables import RunnableLambda
 from langgraph.checkpoint.memory import InMemorySaver
+from posthog.test.base import BaseTest
 
 from ee.hogai.graph.graph import BaseAssistantGraph
 from ee.hogai.utils.types import AssistantNodeName, AssistantState, PartialAssistantState
-from posthog.test.base import BaseTest
 
 
 class TestAssistantGraph(BaseTest):

@@ -1,6 +1,7 @@
 from datetime import datetime
 from itertools import groupby
 from typing import Any, Optional
+
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_expr
 from posthog.hogql_queries.insights.funnels.base import FunnelBase

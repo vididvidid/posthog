@@ -1,9 +1,9 @@
-from posthog.utils import get_instance_region
-from posthog.cloud_utils import is_cloud
-from typing import Any
-import structlog
-
 from contextlib import contextmanager
+from typing import Any
+
+import structlog
+from posthog.cloud_utils import is_cloud
+from posthog.utils import get_instance_region
 
 PH_US_API_KEY = "sTMFPsFhdP1Ssg"
 PH_US_HOST = "https://us.i.posthog.com"

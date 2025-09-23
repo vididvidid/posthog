@@ -11,6 +11,9 @@ import { capitalizeFirstLetter } from 'lib/utils'
 import { Scene, SceneExport } from 'scenes/sceneTypes'
 import { urls } from 'scenes/urls'
 
+import { SceneContent } from '~/layout/scenes/components/SceneContent'
+import { SceneDivider } from '~/layout/scenes/components/SceneDivider'
+import { SceneTitleSection } from '~/layout/scenes/components/SceneTitleSection'
 import { Breadcrumb } from '~/types'
 
 import { CampaignsTable } from './Campaigns/CampaignsTable'
@@ -47,10 +50,6 @@ export const messagingSceneLogic = kea<messagingSceneLogicType>([
             (tab): Breadcrumb[] => {
                 return [
                     {
-                        key: Scene.Messaging,
-                        name: 'Messaging',
-                    },
-                    {
                         key: [Scene.Messaging, tab],
                         name: capitalizeFirstLetter(tab.replaceAll('_', ' ')),
                     },
@@ -65,7 +64,6 @@ export const messagingSceneLogic = kea<messagingSceneLogicType>([
     }),
     urlToAction(({ actions, values }) => {
         return {
-            // All possible routes for this scene need to be listed here
             [urls.messaging(':tab' as MessagingSceneTab)]: ({ tab }) => {
                 let possibleTab: MessagingSceneTab = (tab as MessagingSceneTab) ?? 'campaigns'
                 possibleTab = MESSAGING_SCENE_TABS.includes(possibleTab) ? possibleTab : 'campaigns'
@@ -160,5 +158,15 @@ export function MessagingScene(): JSX.Element {
         },
     ]
 
-    return <LemonTabs activeKey={currentTab} tabs={tabs} onChange={setCurrentTab} />
+    return (
+        <SceneContent className="messaging">
+            <SceneTitleSection
+                name="Messaging"
+                resourceType={{ type: 'messaging' }}
+                description="Create automated workflows triggered by PostHog events to onboard, retain, and re-engage your users."
+            />
+            <SceneDivider />
+            <LemonTabs activeKey={currentTab} tabs={tabs} onChange={setCurrentTab} sceneInset />
+        </SceneContent>
+    )
 }

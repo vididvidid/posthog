@@ -4,18 +4,13 @@ from typing import Union
 
 import structlog
 from django.conf import settings
-
 from posthog.async_migrations.definition import (
     AsyncMigrationDefinition,
     AsyncMigrationOperation,
     AsyncMigrationOperationSQL,
 )
 from posthog.async_migrations.disk_util import analyze_enough_disk_space_free_for_table
-from posthog.async_migrations.utils import (
-    execute_op_clickhouse,
-    run_optimize_table,
-    sleep_until_finished,
-)
+from posthog.async_migrations.utils import execute_op_clickhouse, run_optimize_table, sleep_until_finished
 from posthog.clickhouse.client import sync_execute
 from posthog.models.event.sql import EVENTS_DATA_TABLE
 from posthog.utils import str_to_bool

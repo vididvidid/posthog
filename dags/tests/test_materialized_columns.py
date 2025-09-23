@@ -8,16 +8,16 @@ import dagster
 import pydantic
 import pytest
 from clickhouse_driver import Client
+from posthog.clickhouse.cluster import ClickhouseCluster, Query
+from posthog.test.base import materialized
 
 from dags.materialized_columns import (
     MaterializationConfig,
     PartitionRange,
+    join_mappings,
     materialize_column,
     run_materialize_mutations,
-    join_mappings,
 )
-from posthog.clickhouse.cluster import ClickhouseCluster, Query
-from posthog.test.base import materialized
 
 
 def test_join_mappings():

@@ -1,11 +1,10 @@
 import structlog
-
 from django.db import models
-from posthog.models.team import Team
-from posthog.models.utils import CreatedMetaFields, UpdatedMetaFields, UUIDTModel
+from django.db.models import QuerySet
 from posthog.models.file_system.file_system_mixin import FileSystemSyncMixin
 from posthog.models.file_system.file_system_representation import FileSystemRepresentation
-from django.db.models import QuerySet
+from posthog.models.team import Team
+from posthog.models.utils import CreatedMetaFields, UpdatedMetaFields, UUIDTModel
 
 logger = structlog.get_logger(__name__)
 

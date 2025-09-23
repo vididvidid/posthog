@@ -5,16 +5,8 @@ from typing import Any
 
 from dateutil.relativedelta import relativedelta
 from django.utils.timezone import now
-
 from posthog.constants import TREND_FILTER_TYPE_ACTIONS
-from posthog.models import (
-    Action,
-    Dashboard,
-    DashboardTile,
-    Insight,
-    Person,
-    PropertyDefinition,
-)
+from posthog.models import Action, Dashboard, DashboardTile, Insight, Person, PropertyDefinition
 from posthog.models.filters.mixins.utils import cached_property
 from posthog.models.utils import UUIDT
 from posthog.utils import get_absolute_path

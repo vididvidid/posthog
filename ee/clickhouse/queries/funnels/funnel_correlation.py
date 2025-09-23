@@ -1,24 +1,9 @@
 import dataclasses
 import urllib.parse
-from typing import (
-    Any,
-    Literal,
-    Optional,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import Any, Literal, Optional, TypedDict, Union, cast
 
-from rest_framework.exceptions import ValidationError
-
-from ee.clickhouse.queries.column_optimizer import EnterpriseColumnOptimizer
-from ee.clickhouse.queries.groups_join_query import GroupsJoinQuery
 from posthog.clickhouse.materialized_columns import get_materialized_column_for_property
-from posthog.constants import (
-    AUTOCAPTURE_EVENT,
-    TREND_FILTER_TYPE_ACTIONS,
-    FunnelCorrelationType,
-)
+from posthog.constants import AUTOCAPTURE_EVENT, TREND_FILTER_TYPE_ACTIONS, FunnelCorrelationType
 from posthog.models.element.element import chain_to_elements
 from posthog.models.event.util import ElementSerializer
 from posthog.models.filters import Filter
@@ -31,6 +16,10 @@ from posthog.queries.person_query import PersonQuery
 from posthog.queries.util import alias_poe_mode_for_legacy, correct_result_for_sampling
 from posthog.schema import PersonsOnEventsMode
 from posthog.utils import generate_short_id
+from rest_framework.exceptions import ValidationError
+
+from ee.clickhouse.queries.column_optimizer import EnterpriseColumnOptimizer
+from ee.clickhouse.queries.groups_join_query import GroupsJoinQuery
 
 
 class EventDefinition(TypedDict):

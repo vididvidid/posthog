@@ -1,13 +1,12 @@
 import dataclasses
-from hashlib import md5
 import json
-from datetime import datetime
 import os
+from datetime import datetime
+from hashlib import md5
 from typing import Any
 from uuid import UUID, uuid4
 
 from django.utils import timezone
-
 from posthog.clickhouse.client import sync_execute
 from posthog.models import Group, Person, PersonDistinctId, Team
 from posthog.models.event.sql import EVENTS_DATA_TABLE

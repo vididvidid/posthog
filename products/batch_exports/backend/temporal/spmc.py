@@ -10,10 +10,7 @@ import uuid
 import pyarrow as pa
 import temporalio.common
 from django.conf import settings
-
-from posthog.batch_exports.service import (
-    BackfillDetails,
-)
+from posthog.batch_exports.service import BackfillDetails
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.database.database import create_hogql_database
 from posthog.hogql.hogql import ast
@@ -25,15 +22,9 @@ from posthog.schema import EventPropertyFilter, HogQLQueryModifiers, Materializa
 from posthog.sync import database_sync_to_async
 from posthog.temporal.common.clickhouse import get_client
 from posthog.temporal.common.heartbeat import Heartbeater
-from posthog.temporal.common.logger import get_external_logger, get_logger
-from products.batch_exports.backend.temporal.heartbeat import (
-    BatchExportRangeHeartbeatDetails,
-    DateRange,
-)
-from products.batch_exports.backend.temporal.metrics import (
-    get_bytes_exported_metric,
-    get_rows_exported_metric,
-)
+from posthog.temporal.common.logger import get_produce_only_logger, get_write_only_logger
+from products.batch_exports.backend.temporal.heartbeat import BatchExportRangeHeartbeatDetails, DateRange
+from products.batch_exports.backend.temporal.metrics import get_bytes_exported_metric, get_rows_exported_metric
 from products.batch_exports.backend.temporal.record_batch_model import RecordBatchModel
 from products.batch_exports.backend.temporal.sql import (
     SELECT_FROM_DISTRIBUTED_EVENTS_RECENT,
@@ -58,8 +49,8 @@ from products.batch_exports.backend.temporal.utils import (
     cast_record_batch_schema_json_columns,
 )
 
-LOGGER = get_logger(__name__)
-EXTERNAL_LOGGER = get_external_logger()
+LOGGER = get_write_only_logger(__name__)
+EXTERNAL_LOGGER = get_produce_only_logger("EXTERNAL")
 
 
 class RecordBatchQueue(asyncio.Queue):

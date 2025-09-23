@@ -1,20 +1,10 @@
 import dataclasses
 from collections.abc import Callable
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Literal,
-    Optional,
-    TypeAlias,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, TypeAlias, Union, cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.db.models import Prefetch, Q
-from pydantic import BaseModel, ConfigDict
-
+from opentelemetry import trace
 from posthog.exceptions_capture import capture_exception
 from posthog.hogql import ast
 from posthog.hogql.context import HogQLContext
@@ -41,11 +31,7 @@ from posthog.hogql.database.models import (
     VirtualTable,
 )
 from posthog.hogql.database.schema.app_metrics2 import AppMetrics2Table
-from posthog.hogql.database.schema.channel_type import (
-    create_initial_channel_type,
-    create_initial_domain_type,
-)
-from posthog.hogql.database.schema.persons_revenue_analytics import PersonsRevenueAnalyticsTable
+from posthog.hogql.database.schema.channel_type import create_initial_channel_type, create_initial_domain_type
 from posthog.hogql.database.schema.cohort_people import CohortPeople, RawCohortPeople
 from posthog.hogql.database.schema.error_tracking_issue_fingerprint_overrides import (
     ErrorTrackingIssueFingerprintOverridesTable,
@@ -55,6 +41,7 @@ from posthog.hogql.database.schema.error_tracking_issue_fingerprint_overrides im
 from posthog.hogql.database.schema.events import EventsTable
 from posthog.hogql.database.schema.exchange_rate import ExchangeRateTable
 from posthog.hogql.database.schema.groups import GroupsTable, RawGroupsTable
+from posthog.hogql.database.schema.groups_revenue_analytics import GroupsRevenueAnalyticsTable
 from posthog.hogql.database.schema.heatmaps import HeatmapsTable
 from posthog.hogql.database.schema.log_entries import (
     BatchExportLogEntriesTable,
@@ -68,41 +55,39 @@ from posthog.hogql.database.schema.person_distinct_id_overrides import (
     RawPersonDistinctIdOverridesTable,
     join_with_person_distinct_id_overrides_table,
 )
-from posthog.hogql.database.schema.person_distinct_ids import (
-    PersonDistinctIdsTable,
-    RawPersonDistinctIdsTable,
-)
-from posthog.hogql.database.schema.persons import (
-    PersonsTable,
-    RawPersonsTable,
-    join_with_persons_table,
-)
+from posthog.hogql.database.schema.person_distinct_ids import PersonDistinctIdsTable, RawPersonDistinctIdsTable
+from posthog.hogql.database.schema.persons import PersonsTable, RawPersonsTable, join_with_persons_table
+from posthog.hogql.database.schema.persons_revenue_analytics import PersonsRevenueAnalyticsTable
 from posthog.hogql.database.schema.pg_embeddings import PgEmbeddingsTable
 from posthog.hogql.database.schema.query_log_archive import QueryLogArchiveTable, RawQueryLogArchiveTable
 from posthog.hogql.database.schema.session_replay_events import (
     RawSessionReplayEventsTable,
     SessionReplayEventsTable,
     join_replay_table_to_sessions_table_v2,
+    join_replay_table_to_sessions_table_v3,
 )
-from posthog.hogql.database.schema.sessions_v1 import (
-    RawSessionsTableV1,
-    SessionsTableV1,
-)
+from posthog.hogql.database.schema.sessions_v1 import RawSessionsTableV1, SessionsTableV1
 from posthog.hogql.database.schema.sessions_v2 import (
     RawSessionsTableV2,
     SessionsTableV2,
     join_events_table_to_sessions_table_v2,
 )
+from posthog.hogql.database.schema.sessions_v3 import (
+    RawSessionsTableV3,
+    SessionsTableV3,
+    join_events_table_to_sessions_table_v3,
+)
 from posthog.hogql.database.schema.static_cohort_people import StaticCohortPeople
+from posthog.hogql.database.schema.system import SystemTables
 from posthog.hogql.database.schema.web_analytics_preaggregated import (
-    WebStatsDailyTable,
-    WebBouncesDailyTable,
-    WebStatsHourlyTable,
-    WebBouncesHourlyTable,
-    WebStatsCombinedTable,
     WebBouncesCombinedTable,
-    WebPreAggregatedStatsTable,
+    WebBouncesDailyTable,
+    WebBouncesHourlyTable,
     WebPreAggregatedBouncesTable,
+    WebPreAggregatedStatsTable,
+    WebStatsCombinedTable,
+    WebStatsDailyTable,
+    WebStatsHourlyTable,
 )
 from posthog.hogql.errors import QueryError, ResolutionError
 from posthog.hogql.parser import parse_expr
@@ -116,6 +101,7 @@ from posthog.schema import (
     DatabaseSchemaPostHogTable,
     DatabaseSchemaSchema,
     DatabaseSchemaSource,
+    DatabaseSchemaSystemTable,
     DatabaseSchemaViewTable,
     DatabaseSerializedFieldType,
     HogQLQuery,
@@ -125,8 +111,8 @@ from posthog.schema import (
 )
 from posthog.warehouse.models.external_data_job import ExternalDataJob
 from posthog.warehouse.models.table import DataWarehouseTable, DataWarehouseTableColumns
-from opentelemetry import trace
 from products.revenue_analytics.backend.views.orchestrator import build_all_revenue_analytics_views
+from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
     from posthog.models import Team
@@ -155,7 +141,7 @@ class Database(BaseModel):
     app_metrics: AppMetrics2Table = AppMetrics2Table()
     console_logs_log_entries: ReplayConsoleLogsLogEntriesTable = ReplayConsoleLogsLogEntriesTable()
     batch_export_log_entries: BatchExportLogEntriesTable = BatchExportLogEntriesTable()
-    sessions: Union[SessionsTableV1, SessionsTableV2] = SessionsTableV1()
+    sessions: Union[SessionsTableV1, SessionsTableV2, SessionsTableV3] = SessionsTableV1()
     heatmaps: HeatmapsTable = HeatmapsTable()
     exchange_rate: ExchangeRateTable = ExchangeRateTable()
 
@@ -173,6 +159,7 @@ class Database(BaseModel):
 
     # Revenue analytics tables
     persons_revenue_analytics: PersonsRevenueAnalyticsTable = PersonsRevenueAnalyticsTable()
+    groups_revenue_analytics: GroupsRevenueAnalyticsTable = GroupsRevenueAnalyticsTable()
 
     raw_session_replay_events: RawSessionReplayEventsTable = RawSessionReplayEventsTable()
     raw_person_distinct_ids: RawPersonDistinctIdsTable = RawPersonDistinctIdsTable()
@@ -183,7 +170,8 @@ class Database(BaseModel):
     raw_error_tracking_issue_fingerprint_overrides: RawErrorTrackingIssueFingerprintOverridesTable = (
         RawErrorTrackingIssueFingerprintOverridesTable()
     )
-    raw_sessions: Union[RawSessionsTableV1, RawSessionsTableV2] = RawSessionsTableV1()
+    raw_sessions: Union[RawSessionsTableV1, RawSessionsTableV2, RawSessionsTableV3] = RawSessionsTableV1()
+    raw_sessions_v3: Union[RawSessionsTableV1, RawSessionsTableV2, RawSessionsTableV3] = RawSessionsTableV3()
     raw_query_log: RawQueryLogArchiveTable = RawQueryLogArchiveTable()
     pg_embeddings: PgEmbeddingsTable = PgEmbeddingsTable()
     # logs table for logs product
@@ -191,6 +179,7 @@ class Database(BaseModel):
 
     # system tables
     numbers: NumbersTable = NumbersTable()
+    system: TableGroup = SystemTables()
 
     # These are the tables exposed via SQL editor autocomplete and data management
     _table_names: ClassVar[list[str]] = [
@@ -199,6 +188,7 @@ class Database(BaseModel):
         "persons",
         "sessions",
         "query_log",
+        *system.resolve_all_table_names(),
     ]
 
     _warehouse_table_names: list[str] = []
@@ -287,6 +277,9 @@ class Database(BaseModel):
 
     def get_posthog_tables(self) -> list[str]:
         return self._table_names
+
+    def get_system_tables(self) -> list[str]:
+        return [*self.system.resolve_all_table_names(), "query_log"]
 
     def get_warehouse_tables(self) -> list[str]:
         return self._warehouse_table_names + self._warehouse_self_managed_table_names
@@ -380,6 +373,46 @@ def _use_error_tracking_issue_id_from_error_tracking_issue_overrides(database: D
     )
 
 
+def _setup_group_key_fields(database: Database, team: "Team") -> None:
+    """
+    Set up group key fields as ExpressionFields that handle filtering based on GroupTypeMapping.created_at.
+    For $group_N fields, this returns:
+    - Empty string if no GroupTypeMapping exists for that index
+    - if(timestamp < mapping.created_at, '', $group_N) if GroupTypeMapping exists
+    """
+    group_mappings = {mapping.group_type_index: mapping for mapping in GroupTypeMapping.objects.filter(team=team)}
+
+    for group_index in range(5):
+        field_name = f"$group_{group_index}"
+
+        group_mapping = group_mappings.get(group_index, None)
+        # If no mapping exists or the mapping predated this feature, leave the original field unchanged
+        if group_mapping and group_mapping.created_at:
+            # Store the original field as a "raw" version before replacing
+            original_field = database.events.fields[field_name]
+            raw_field_name = f"_{field_name}_raw"
+            database.events.fields[raw_field_name] = original_field.model_copy(update={"hidden": True})
+
+            created_at_str = group_mapping.created_at.strftime("%Y-%m-%d %H:%M:%S")
+
+            database.events.fields[field_name] = ExpressionField(
+                name=field_name,
+                expr=ast.Call(
+                    name="if",
+                    args=[
+                        ast.CompareOperation(
+                            left=ast.Field(chain=["timestamp"]),
+                            op=ast.CompareOperationOp.Lt,
+                            right=ast.Constant(value=created_at_str),
+                        ),
+                        ast.Constant(value=""),
+                        ast.Field(chain=[raw_field_name]),
+                    ],
+                ),
+                isolate_scope=True,
+            )
+
+
 def _use_virtual_fields(database: Database, modifiers: HogQLQueryModifiers, timings: HogQLTimings) -> None:
     poe = cast(VirtualTable, database.events.fields["poe"])
 
@@ -413,6 +446,7 @@ def _use_virtual_fields(database: Database, modifiers: HogQLQueryModifiers, timi
                 chain = ["revenue_analytics", field]
 
                 database.persons.fields[field_name] = ast.FieldTraverser(chain=chain)
+                database.groups.fields[field_name] = ast.FieldTraverser(chain=chain)
                 poe.fields[field_name] = ast.FieldTraverser(chain=chain)
 
 
@@ -427,7 +461,7 @@ def create_hogql_database(
     modifiers: Optional[HogQLQueryModifiers] = None,
     timings: Optional[HogQLTimings] = None,
 ) -> Database:
-    from posthog.hogql.database.s3_table import S3Table
+    from posthog.hogql.database.s3_table import DataWarehouseTable as HogQLDataWarehouseTable
     from posthog.hogql.query import create_default_modifiers_for_team
     from posthog.models import Team
     from posthog.warehouse.models import DataWarehouseJoin, DataWarehouseSavedQuery
@@ -486,9 +520,9 @@ def create_hogql_database(
             modifiers.sessionTableVersion == SessionTableVersion.V2
             or modifiers.sessionTableVersion == SessionTableVersion.AUTO
         ):
-            raw_sessions = RawSessionsTableV2()
+            raw_sessions: Union[RawSessionsTableV2, RawSessionsTableV3] = RawSessionsTableV2()
             database.raw_sessions = raw_sessions
-            sessions = SessionsTableV2()
+            sessions: Union[SessionsTableV2, SessionsTableV3] = SessionsTableV2()
             database.sessions = sessions
             events = database.events
             events.fields["session"] = LazyJoin(
@@ -510,11 +544,35 @@ def create_hogql_database(
                 join_function=join_replay_table_to_sessions_table_v2,
             )
             cast(LazyJoin, raw_replay_events.fields["events"]).join_table = events
+        elif modifiers.sessionTableVersion == SessionTableVersion.V3:
+            sessions = SessionsTableV3()
+            database.sessions = sessions
+            events = database.events
+            events.fields["session"] = LazyJoin(
+                from_field=["$session_id"],
+                join_table=sessions,
+                join_function=join_events_table_to_sessions_table_v3,
+            )
+            replay_events = database.session_replay_events
+            replay_events.fields["session"] = LazyJoin(
+                from_field=["session_id"],
+                join_table=sessions,
+                join_function=join_replay_table_to_sessions_table_v3,
+            )
+            cast(LazyJoin, replay_events.fields["events"]).join_table = events
+            raw_replay_events = database.raw_session_replay_events
+            raw_replay_events.fields["session"] = LazyJoin(
+                from_field=["session_id"],
+                join_table=sessions,
+                join_function=join_replay_table_to_sessions_table_v3,
+            )
+            cast(LazyJoin, raw_replay_events.fields["events"]).join_table = events
 
     with timings.measure("virtual_fields"):
         _use_virtual_fields(database, modifiers, timings)
 
     with timings.measure("group_type_mapping"):
+        _setup_group_key_fields(database, team)
         for mapping in GroupTypeMapping.objects.filter(project_id=team.project_id):
             if database.events.fields.get(mapping.group_type) is None:
                 database.events.fields[mapping.group_type] = FieldTraverser(chain=[f"group_{mapping.group_type_index}"])
@@ -536,8 +594,6 @@ def create_hogql_database(
             with timings.measure(f"saved_query_{saved_query.name}"):
                 views[saved_query.name] = saved_query.hogql_definition(modifiers)
 
-    # For every Stripe source, let's generate its own revenue view
-    # Prefetch related schemas and tables to avoid N+1
     with timings.measure("revenue_analytics_views"):
         revenue_views = []
         try:
@@ -545,11 +601,11 @@ def create_hogql_database(
         except Exception as e:
             capture_exception(e)
 
-        # Each view will have a name similar to stripe.prefix.table_name
-        # We want to create a nested table group where stripe is the parent,
-        # prefix is the child of stripe, and table_name is the child of prefix
-        # allowing you to access the table as stripe[prefix][table_name] in a dict fashion
-        # but still allowing the bare stripe.prefix.table_name string access
+        # Each view will have a name similar to `stripe.<prefix>.<table_name>`
+        # We want to create a nested table group where `stripe` is the parent,
+        # `<prefix>` is the child of `stripe`, and `<table_name>` is the child of `<prefix>`
+        # allowing you to access the table as `stripe[prefix][table_name]` in a dict fashion
+        # but still allowing the bare `stripe.prefix.table_name` string access
         for view in revenue_views:
             try:
                 views[view.name] = view
@@ -558,10 +614,20 @@ def create_hogql_database(
                 capture_exception(e)
                 continue
 
+    class WarehousePropertiesVirtualTable(VirtualTable):
+        fields: dict[str, FieldOrTable]
+        parent_table: HogQLDataWarehouseTable
+
+        def to_printed_hogql(self):
+            return self.parent_table.to_printed_hogql()
+
+        def to_printed_clickhouse(self, context):
+            return self.parent_table.to_printed_clickhouse(context)
+
     with timings.measure("data_warehouse_tables"):
         with timings.measure("select"):
             tables = list(
-                DataWarehouseTable.objects.filter(team_id=team.pk)
+                DataWarehouseTable.raw_objects.filter(team_id=team.pk)
                 .exclude(deleted=True)
                 .select_related("credential", "external_data_source")
             )
@@ -577,18 +643,9 @@ def create_hogql_database(
 
                 # If the warehouse table has no _properties_ field, then set it as a virtual table
                 if s3_table.fields.get("properties") is None:
-
-                    class WarehouseProperties(VirtualTable):
-                        fields: dict[str, FieldOrTable] = s3_table.fields
-                        parent_table: S3Table = s3_table
-
-                        def to_printed_hogql(self):
-                            return self.parent_table.to_printed_hogql()
-
-                        def to_printed_clickhouse(self, context):
-                            return self.parent_table.to_printed_clickhouse(context)
-
-                    s3_table.fields["properties"] = WarehouseProperties(hidden=True)
+                    s3_table.fields["properties"] = WarehousePropertiesVirtualTable(
+                        fields=s3_table.fields, parent_table=s3_table, hidden=True
+                    )
 
                 if table.external_data_source:
                     warehouse_tables[table.name] = s3_table
@@ -897,6 +954,7 @@ class SerializedField:
 
 DatabaseSchemaTable: TypeAlias = (
     DatabaseSchemaPostHogTable
+    | DatabaseSchemaSystemTable
     | DatabaseSchemaDataWarehouseTable
     | DatabaseSchemaViewTable
     | DatabaseSchemaManagedViewTable
@@ -917,11 +975,11 @@ def serialize_database(
     if context.team_id is None:
         raise ResolutionError("Must provide team_id to serialize_database")
 
-    # PostHog Tables
+    # PostHog tables
     posthog_tables = context.database.get_posthog_tables()
     for table_key in posthog_tables:
         field_input: dict[str, Any] = {}
-        table = getattr(context.database, table_key, None)
+        table = context.database.get_table(table_key)
         if isinstance(table, FunctionCallTable):
             field_input = table.get_asterisk()
         elif isinstance(table, Table):
@@ -930,6 +988,20 @@ def serialize_database(
         fields = serialize_fields(field_input, context, table_key.split("."), table_type="posthog")
         fields_dict = {field.name: field for field in fields}
         tables[table_key] = DatabaseSchemaPostHogTable(fields=fields_dict, id=table_key, name=table_key)
+
+    # System tables
+    system_tables = context.database.get_system_tables()
+    for table_key in system_tables:
+        system_field_input: dict[str, Any] = {}
+        table = context.database.get_table(table_key)
+        if isinstance(table, FunctionCallTable):
+            system_field_input = table.get_asterisk()
+        elif isinstance(table, Table):
+            system_field_input = table.fields
+
+        fields = serialize_fields(system_field_input, context, table_key.split("."), table_type="posthog")
+        fields_dict = {field.name: field for field in fields}
+        tables[table_key] = DatabaseSchemaSystemTable(fields=fields_dict, id=table_key, name=table_key)
 
     # Data Warehouse Tables and Views - Fetch all related data in one go
     warehouse_table_names = context.database.get_warehouse_tables()

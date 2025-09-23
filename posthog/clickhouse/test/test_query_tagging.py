@@ -1,18 +1,18 @@
 import uuid
 
-from posthog.clickhouse.query_tagging import (
-    tag_queries,
-    get_query_tags,
-    tags_context,
-    clear_tag,
-    reset_query_tags,
-    QueryTags,
-    Product,
-    get_query_tag_value,
-    create_base_tags,
-    TemporalTags,
-)
 import pytest
+from posthog.clickhouse.query_tagging import (
+    Product,
+    QueryTags,
+    TemporalTags,
+    clear_tag,
+    create_base_tags,
+    get_query_tag_value,
+    get_query_tags,
+    reset_query_tags,
+    tag_queries,
+    tags_context,
+)
 from pydantic import ValidationError
 
 

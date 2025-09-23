@@ -1,8 +1,8 @@
-import unittest.mock
-import requests
-import pytest
 import json
 
+import pytest
+import requests
+import unittest.mock
 from posthog.temporal.data_imports.sources.salesforce import auth
 
 

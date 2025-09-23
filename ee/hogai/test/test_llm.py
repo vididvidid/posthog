@@ -1,11 +1,11 @@
 from datetime import datetime
+
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.outputs import Generation, LLMResult
+from posthog.test.base import NonAtomicBaseTest
 from unittest.mock import patch
 
-from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_core.outputs import LLMResult, Generation
-
 from ee.hogai.llm import MaxChatOpenAI
-from posthog.test.base import NonAtomicBaseTest
 
 
 @patch.dict("os.environ", {"OPENAI_API_KEY": "test-api-key"})

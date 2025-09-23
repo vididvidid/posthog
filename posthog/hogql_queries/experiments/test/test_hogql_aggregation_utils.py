@@ -1,9 +1,9 @@
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_expr
 from posthog.hogql_queries.experiments.hogql_aggregation_utils import (
+    build_aggregation_call,
     extract_aggregation_and_inner_expr,
     is_aggregation_function,
-    build_aggregation_call,
 )
 from posthog.test.base import BaseTest
 

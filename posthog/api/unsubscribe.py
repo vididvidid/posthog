@@ -1,6 +1,5 @@
 import jwt
 from django.http import HttpRequest, JsonResponse
-
 from posthog.models.subscription import unsubscribe_using_token
 
 

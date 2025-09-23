@@ -1,7 +1,6 @@
-from unittest.mock import patch
-
 from posthog.test.base import APIBaseTest
 from posthog.warehouse.models import DataWarehouseSavedQuery
+from unittest.mock import patch
 
 
 class TestView(APIBaseTest):

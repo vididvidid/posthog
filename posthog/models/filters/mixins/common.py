@@ -7,8 +7,6 @@ from zoneinfo import ZoneInfo
 
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
-
 from posthog.constants import (
     ACTIONS,
     BREAKDOWN,
@@ -53,14 +51,10 @@ from posthog.constants import (
 from posthog.hogql.constants import BREAKDOWN_VALUES_LIMIT, BREAKDOWN_VALUES_LIMIT_FOR_COUNTRIES
 from posthog.models.entity import Entity, ExclusionEntity, MathType
 from posthog.models.filters.mixins.base import BaseParamMixin, BreakdownType
-from posthog.models.filters.mixins.utils import (
-    cached_property,
-    include_dict,
-    include_query_tags,
-    process_bool,
-)
+from posthog.models.filters.mixins.utils import cached_property, include_dict, include_query_tags, process_bool
 from posthog.models.filters.utils import GroupTypeIndex, validate_group_type_index
 from posthog.utils import DEFAULT_DATE_FROM_DAYS, relative_date_parse_with_delta_mapping
+from rest_framework.exceptions import ValidationError
 
 # When updating this regex, remember to update the regex with the same name in TrendsFormula.tsx
 ALLOWED_FORMULA_CHARACTERS = r"([a-zA-Z \-*^0-9+/().]+)"

@@ -32,7 +32,7 @@ export interface PopoverProps {
     onMouseEnterInside?: MouseEventHandler<HTMLDivElement>
     onMouseLeaveInside?: MouseEventHandler<HTMLDivElement>
     /** Popover trigger element. If you pass one <Component/> child, it will get the `ref` prop automatically. */
-    children?: React.ReactChild
+    children?: React.ReactNode
     /** External reference element not passed as a direct child */
     referenceElement?: HTMLElement | null
     /** Content of the overlay. */
@@ -143,7 +143,7 @@ export const Popover = React.forwardRef<HTMLDivElement, PopoverProps>(function P
                           fallbackPlacements: [
                               // Prioritize top placements when there might be space issues
                               ...fallbackPlacements.filter((p) => p.startsWith('top')),
-                              ...fallbackPlacements.filter((p) => p.startsWith('bottom')),
+                              ...fallbackPlacements.filter((p) => !p.startsWith('top')),
                           ],
                           fallbackStrategy: 'bestFit',
                           padding: { bottom: 150 }, // Require at least 150px of space below to avoid flipping

@@ -1,19 +1,19 @@
 from typing import cast
-import pytest
 
+import pytest
 from posthog.management.commands.generate_source_configs import SourceConfigGenerator
 from posthog.schema import (
     ExternalDataSourceType as SchemaExternalDataSourceType,
+    Option,
     SourceConfig,
+    SourceFieldFileUploadConfig,
     SourceFieldFileUploadJsonFormatConfig,
     SourceFieldInputConfig,
+    SourceFieldInputConfigType,
+    SourceFieldOauthConfig,
+    SourceFieldSelectConfig,
     SourceFieldSSHTunnelConfig,
     SourceFieldSwitchGroupConfig,
-    SourceFieldInputConfigType,
-    SourceFieldSelectConfig,
-    Option,
-    SourceFieldOauthConfig,
-    SourceFieldFileUploadConfig,
 )
 from posthog.temporal.data_imports.sources.common.base import FieldType
 from posthog.test.base import ClickhouseTestMixin
@@ -31,7 +31,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_types(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -133,7 +133,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_required(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -155,7 +155,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_not_required(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -176,7 +176,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_input_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -197,7 +197,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_switch_group_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -233,7 +233,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_file_upload_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -256,7 +256,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_oauth_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -279,7 +279,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_ssh_tunnel_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -300,7 +300,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_complex_select_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -358,7 +358,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_simple_select_non_python_identifier(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -381,7 +381,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_ssh_tunnel_reference(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -397,7 +397,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_type_conversion(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [
@@ -418,7 +418,7 @@ class TestSourceConfigGenerator(ClickhouseTestMixin):
     def test_source_config_nested_class(self):
         config = SourceConfig(
             name=SchemaExternalDataSourceType.STRIPE,
-            caption="",
+            iconPath="",
             fields=cast(
                 list[FieldType],
                 [

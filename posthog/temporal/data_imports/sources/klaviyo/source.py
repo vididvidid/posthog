@@ -1,4 +1,5 @@
 from typing import cast
+
 from posthog.schema import (
     ExternalDataSourceType as SchemaExternalDataSourceType,
     SourceConfig,
@@ -20,7 +21,7 @@ class KlaviyoSource(BaseSource[KlaviyoSourceConfig]):
         return SourceConfig(
             name=SchemaExternalDataSourceType.KLAVIYO,
             label="Klaviyo",
-            caption="",
+            iconPath="/static/services/klaviyo.png",
             fields=cast(list[FieldType], []),
             unreleasedSource=True,
         )

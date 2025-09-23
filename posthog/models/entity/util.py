@@ -1,5 +1,5 @@
-from typing import Any
 from collections.abc import Sequence
+from typing import Any
 
 from posthog.constants import TREND_FILTER_TYPE_ACTIONS
 from posthog.hogql.hogql import HogQLContext

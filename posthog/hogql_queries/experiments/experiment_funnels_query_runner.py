@@ -1,6 +1,10 @@
 import json
-from posthog.constants import ExperimentNoResultsErrorKeys
+from datetime import UTC, datetime, timedelta
+from typing import Any, Optional, cast
+from zoneinfo import ZoneInfo
+
 from posthog.clickhouse.query_tagging import tag_queries
+from posthog.constants import ExperimentNoResultsErrorKeys
 from posthog.hogql import ast
 from posthog.hogql_queries.experiments import CONTROL_VARIANT_KEY
 from posthog.hogql_queries.experiments.funnels_statistics_v2 import (
@@ -10,9 +14,10 @@ from posthog.hogql_queries.experiments.funnels_statistics_v2 import (
 )
 from posthog.hogql_queries.query_runner import QueryRunner
 from posthog.models.experiment import Experiment
-from ..insights.funnels.funnels_query_runner import FunnelsQueryRunner
 from posthog.schema import (
+    BreakdownFilter,
     CachedExperimentFunnelsQueryResponse,
+    DateRange,
     ExperimentFunnelsQuery,
     ExperimentFunnelsQueryResponse,
     ExperimentSignificanceCode,
@@ -21,18 +26,14 @@ from posthog.schema import (
     FunnelsFilter,
     FunnelsQuery,
     FunnelsQueryResponse,
-    DateRange,
-    BreakdownFilter,
 )
-from typing import Optional, Any, cast
-from zoneinfo import ZoneInfo
 from rest_framework.exceptions import ValidationError
-from datetime import datetime, timedelta, UTC
+
+from ..insights.funnels.funnels_query_runner import FunnelsQueryRunner
 
 
 class ExperimentFunnelsQueryRunner(QueryRunner):
     query: ExperimentFunnelsQuery
-    response: ExperimentFunnelsQueryResponse
     cached_response: CachedExperimentFunnelsQueryResponse
 
     def __init__(self, *args, **kwargs):

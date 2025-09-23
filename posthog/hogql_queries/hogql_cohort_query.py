@@ -2,8 +2,6 @@ from collections import namedtuple
 from numbers import Number
 from typing import Literal, Optional, Union, cast
 
-from rest_framework.exceptions import ValidationError
-
 from posthog.constants import PropertyOperatorType
 from posthog.hogql import ast
 from posthog.hogql.ast import SelectQuery, SelectSetNode, SelectSetQuery
@@ -15,42 +13,43 @@ from posthog.hogql.property import get_property_type
 from posthog.hogql.query import HogQLQueryExecutor
 from posthog.hogql_queries.actors_query_runner import ActorsQueryRunner
 from posthog.hogql_queries.events_query_runner import EventsQueryRunner
-from posthog.models import Filter, Cohort, Team, Property
+from posthog.models import Cohort, Filter, Property, Team
 from posthog.models.property import PropertyGroup
+from posthog.queries.cohort_query import CohortQuery
 from posthog.queries.foss_cohort_query import (
-    validate_interval,
-    parse_and_validate_positive_integer,
     INTERVAL_TO_SECONDS,
     FOSSCohortQuery,
+    parse_and_validate_positive_integer,
+    validate_interval,
 )
 from posthog.schema import (
-    ActorsQuery,
-    EventsQuery,
-    InsightActorsQuery,
-    TrendsQuery,
-    DateRange,
-    TrendsFilter,
-    EventsNode,
     ActionsNode,
+    ActorsQuery,
     BaseMathType,
-    FunnelsQuery,
+    DateRange,
+    EventPropertyFilter,
+    EventsNode,
+    EventsQuery,
+    FunnelConversionWindowTimeUnit,
     FunnelsActorsQuery,
     FunnelsFilter,
-    FunnelConversionWindowTimeUnit,
-    StickinessQuery,
-    StickinessFilter,
-    StickinessCriteria,
-    StickinessActorsQuery,
-    PersonPropertyFilter,
-    PropertyOperator,
-    PropertyGroupFilterValue,
-    EventPropertyFilter,
+    FunnelsQuery,
     HogQLPropertyFilter,
     HogQLQueryModifiers,
+    InsightActorsQuery,
+    PersonPropertyFilter,
     PersonsOnEventsMode,
+    PropertyGroupFilterValue,
+    PropertyOperator,
+    StickinessActorsQuery,
+    StickinessCriteria,
+    StickinessFilter,
+    StickinessQuery,
+    TrendsFilter,
+    TrendsQuery,
 )
-from posthog.queries.cohort_query import CohortQuery
 from posthog.types import AnyPropertyFilter
+from rest_framework.exceptions import ValidationError
 
 
 class TestWrapperCohortQuery(CohortQuery):

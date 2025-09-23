@@ -1,4 +1,5 @@
 #!/usr/local/bin/python
+# ruff: noqa: T201 allow print statements
 
 import datetime
 import os
@@ -10,7 +11,6 @@ import time
 import digitalocean
 import requests
 import urllib3
-
 
 DOMAIN = "posthog.cc"
 

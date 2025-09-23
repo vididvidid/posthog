@@ -1,5 +1,4 @@
 from flaky import flaky
-
 from posthog.hogql_queries.experiments import MIN_PROBABILITY_FOR_SIGNIFICANCE
 from posthog.hogql_queries.experiments.trends_statistics_v2_continuous import (
     are_results_significant_v2_continuous,

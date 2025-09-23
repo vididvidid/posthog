@@ -1,21 +1,23 @@
+# ruff: noqa: T201 allow print statements
+
 import datetime as dt
 import logging
 import secrets
 from time import monotonic
 from typing import Optional
 
+from dagster_graphql import DagsterGraphQLClient
 from django.core import exceptions
 from django.core.management.base import BaseCommand
-
-from ee.clickhouse.materialized_columns.analyze import materialize_properties_task
 from posthog.demo.matrix import Matrix, MatrixManager
 from posthog.demo.products.hedgebox import HedgeboxMatrix
 from posthog.demo.products.spikegpt import SpikeGPTMatrix
 from posthog.models.group_type_mapping import GroupTypeMapping
 from posthog.models.team.team import Team
-from posthog.taxonomy.taxonomy import PERSON_PROPERTIES_ADAPTED_FROM_EVENT
-from dagster_graphql import DagsterGraphQLClient
 from posthog.settings import DAGSTER_UI_HOST, DAGSTER_UI_PORT
+from posthog.taxonomy.taxonomy import PERSON_PROPERTIES_ADAPTED_FROM_EVENT
+
+from ee.clickhouse.materialized_columns.analyze import materialize_properties_task
 
 logging.getLogger("kafka").setLevel(logging.ERROR)  # Hide kafka-python's logspam
 
@@ -137,6 +139,11 @@ class Command(BaseCommand):
                         password=password,
                         email_collision_handling="disambiguate",
                     )
+                    # Optionally generate demo issues for issue tracker if extension is available
+                    gen_issues = getattr(self, "generate_demo_issues", None)
+                    team_for_issues = getattr(matrix_manager, "team", None)
+                    if callable(gen_issues) and team_for_issues is not None:
+                        gen_issues(team_for_issues)
             except exceptions.ValidationError as e:
                 print(f"Error: {e}")
             else:
@@ -302,13 +309,13 @@ class Command(BaseCommand):
             (end_date - dt.timedelta(days=backfill_days - i)).strftime("%Y-%m-%d") for i in range(backfill_days + 1)
         ]
 
-        daily_asset_names = ["web_analytics_stats_table_daily", "web_analytics_bounces_daily"]
+        asset_names = ["web_pre_aggregated_stats", "web_pre_aggregated_bounces"]
         result = client._execute(
             self.backfill_mutation_gql(),
             {
                 "backfillParams": {
                     "tags": [{"key": "generate_demo_data", "value": "true"}],
-                    "assetSelection": [{"path": [asset_name]} for asset_name in daily_asset_names],
+                    "assetSelection": [{"path": [asset_name]} for asset_name in asset_names],
                     "partitionNames": partition_list,
                     "fromFailure": False,
                 }

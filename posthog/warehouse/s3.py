@@ -1,10 +1,11 @@
 from typing import Optional
+from urllib.parse import urlparse
+
 import boto3
 import botocore
 import botocore.exceptions
 import s3fs
 from django.conf import settings
-from urllib.parse import urlparse
 
 
 def get_s3_client():

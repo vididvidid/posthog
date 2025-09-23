@@ -5,7 +5,6 @@ import string
 
 import pyarrow as pa
 import pytest
-
 from posthog.temporal.common import asyncpa
 
 pytestmark = [pytest.mark.asyncio]

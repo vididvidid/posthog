@@ -1,7 +1,6 @@
 import json
 
 from freezegun import freeze_time
-
 from posthog.constants import FILTER_TEST_ACCOUNTS, TRENDS_LIFECYCLE
 from posthog.models import Action, Filter
 from posthog.models.filters.lifecycle_filter import LifecycleFilter

@@ -3,7 +3,6 @@ from typing import Optional, cast
 
 from freezegun import freeze_time
 from hogql_parser import parse_select
-
 from posthog.constants import UNIQUE_GROUPS
 from posthog.hogql import ast
 from posthog.hogql.constants import MAX_SELECT_RETURNED_ROWS
@@ -17,12 +16,12 @@ from posthog.schema import (
     ChartDisplayType,
     Compare,
     CompareFilter,
-    EventsNode,
     DateRange,
+    EventsNode,
     IntervalType,
+    MathGroupTypeIndex,
     TrendsFilter,
     TrendsQuery,
-    MathGroupTypeIndex,
 )
 from posthog.test.base import BaseTest
 

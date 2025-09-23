@@ -1,7 +1,6 @@
 import base64
 
 from django.core import exceptions
-
 from posthog.models import Plugin, PluginSourceFile
 from posthog.plugins.test.plugin_archives import (
     HELLO_WORLD_PLUGIN_FRONTEND_TSX,

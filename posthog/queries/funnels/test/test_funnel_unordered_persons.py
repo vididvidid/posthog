@@ -3,15 +3,10 @@ from datetime import datetime, timedelta
 import pytest
 from django.utils import timezone
 from freezegun import freeze_time
-
 from posthog.constants import INSIGHT_FUNNELS
 from posthog.models.filters import Filter
-from posthog.queries.funnels.funnel_unordered_persons import (
-    ClickhouseFunnelUnorderedActors,
-)
-from posthog.session_recordings.queries.test.session_replay_sql import (
-    produce_replay_summary,
-)
+from posthog.queries.funnels.funnel_unordered_persons import ClickhouseFunnelUnorderedActors
+from posthog.session_recordings.queries.test.session_replay_sql import produce_replay_summary
 from posthog.test.base import (
     APIBaseTest,
     ClickhouseTestMixin,

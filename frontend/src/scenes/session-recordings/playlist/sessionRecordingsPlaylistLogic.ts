@@ -195,6 +195,7 @@ export function convertUniversalFiltersToRecordingsQuery(universalFilters: Recor
     const properties: RecordingsQuery['properties'] = []
     const console_log_filters: RecordingsQuery['console_log_filters'] = []
     const having_predicates: RecordingsQuery['having_predicates'] = []
+    let comment_text: RecordingsQuery['comment_text'] = undefined
 
     const order: RecordingsQuery['order'] = universalFilters.order || DEFAULT_RECORDING_FILTERS_ORDER_BY
     const order_direction: RecordingsQuery['order_direction'] = universalFilters.order_direction || 'DESC'
@@ -232,6 +233,8 @@ export function convertUniversalFiltersToRecordingsQuery(universalFilters: Recor
                     })
                 } else if (f.key === 'snapshot_source' && f.value) {
                     having_predicates.push(f)
+                } else if (f.key === 'comment_text') {
+                    comment_text = f
                 }
             } else {
                 properties.push(f)
@@ -250,6 +253,7 @@ export function convertUniversalFiltersToRecordingsQuery(universalFilters: Recor
         actions,
         console_log_filters,
         having_predicates,
+        comment_text,
         filter_test_accounts: universalFilters.filter_test_accounts,
         operand: universalFilters.filter_group.type,
     }
@@ -460,7 +464,7 @@ export const sessionRecordingsPlaylistLogic = kea<sessionRecordingsPlaylistLogic
             },
             {
                 loadSessionRecordings: async ({ direction, userModifiedFilters }, breakpoint) => {
-                    const params: RecordingsQuery = {
+                    const params: RecordingsQuery & { add_events_to_property_queries?: '1' } = {
                         ...convertUniversalFiltersToRecordingsQuery(values.filters),
                         person_uuid: props.personUUID ?? '',
                         // KLUDGE: some persons have >8MB of distinct_ids,
@@ -471,6 +475,10 @@ export const sessionRecordingsPlaylistLogic = kea<sessionRecordingsPlaylistLogic
                         // TODO: maybe we can slice this instead
                         distinct_ids: (props.distinctIds?.length || 0) < 100 ? props.distinctIds : undefined,
                         limit: RECORDINGS_LIMIT,
+                    }
+
+                    if (values.allowEventPropertyExpansion) {
+                        params.add_events_to_property_queries = '1'
                     }
 
                     if (userModifiedFilters) {
@@ -895,6 +903,13 @@ export const sessionRecordingsPlaylistLogic = kea<sessionRecordingsPlaylistLogic
     })),
     selectors({
         logicProps: [() => [(_, props) => props], (props): SessionRecordingPlaylistLogicProps => props],
+
+        allowEventPropertyExpansion: [
+            (s) => [s.featureFlags],
+            (featureFlags): boolean => {
+                return !!featureFlags[FEATURE_FLAGS.RECORDINGS_PLAYER_EVENT_PROPERTY_EXPANSION]
+            },
+        ],
 
         matchingEventsMatchType: [
             (s) => [s.filters],

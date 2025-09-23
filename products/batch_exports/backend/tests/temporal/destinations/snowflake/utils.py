@@ -11,8 +11,6 @@ from uuid import uuid4
 import pytest
 import responses
 import snowflake.connector
-from requests.models import PreparedRequest
-
 from posthog.batch_exports.service import BackfillDetails, BatchExportModel, BatchExportSchema
 from posthog.temporal.common.clickhouse import ClickHouseClient
 from products.batch_exports.backend.temporal.destinations.snowflake_batch_export import snowflake_default_fields
@@ -22,6 +20,7 @@ from products.batch_exports.backend.tests.temporal.utils import (
     get_record_batch_from_queue,
     remove_duplicates_from_records,
 )
+from requests.models import PreparedRequest
 
 # Common test attributes
 TEST_TIME = dt.datetime.now(dt.UTC).replace(hour=0, minute=0, second=0, microsecond=0)

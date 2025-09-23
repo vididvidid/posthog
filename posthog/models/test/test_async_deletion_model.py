@@ -1,5 +1,5 @@
-from uuid import UUID, uuid4
 import datetime as dt
+from uuid import UUID, uuid4
 
 from posthog.clickhouse.client import sync_execute
 from posthog.models import AsyncDeletion, DeletionType, Team, User

@@ -1,7 +1,7 @@
 import dagster
+from posthog.clickhouse.cluster import ClickhouseCluster, Query
 
 from dags.common import JobOwners
-from posthog.clickhouse.cluster import ClickhouseCluster, Query
 
 
 class ErrorConfig(dagster.Config):

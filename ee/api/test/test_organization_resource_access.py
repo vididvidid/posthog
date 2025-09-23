@@ -1,10 +1,10 @@
 from django.db import IntegrityError
+from posthog.models.organization import Organization, OrganizationMembership
+from posthog.test.base import FuzzyInt, QueryMatchingTest, snapshot_postgres_queries
 from rest_framework import status
 
 from ee.api.test.base import APILicensedTest
 from ee.models.rbac.organization_resource_access import OrganizationResourceAccess
-from posthog.models.organization import Organization, OrganizationMembership
-from posthog.test.base import QueryMatchingTest, snapshot_postgres_queries, FuzzyInt
 
 
 class TestOrganizationResourceAccessAPI(APILicensedTest, QueryMatchingTest):

@@ -1,28 +1,17 @@
 import asyncio
 import datetime as dt
 import json
-import unittest.mock
 from random import randint
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
+import unittest.mock
 from aioresponses import aioresponses
 from django.conf import settings
 from django.test import override_settings
-from temporalio import activity
-from temporalio.client import WorkflowFailureError
-from temporalio.common import RetryPolicy
-from temporalio.testing import WorkflowEnvironment
-from temporalio.worker import UnsandboxedWorkflowRunner, Worker
-
 from posthog.temporal.common.clickhouse import ClickHouseClient
 from posthog.temporal.tests.utils.events import generate_test_events_in_clickhouse
-from posthog.temporal.tests.utils.models import (
-    acreate_batch_export,
-    adelete_batch_export,
-    afetch_batch_export_runs,
-)
+from posthog.temporal.tests.utils.models import acreate_batch_export, adelete_batch_export, afetch_batch_export_runs
 from products.batch_exports.backend.temporal.batch_exports import (
     BackfillDetails,
     finish_batch_export_run,
@@ -38,9 +27,12 @@ from products.batch_exports.backend.temporal.destinations.http_batch_export impo
     http_default_fields,
     insert_into_http_activity,
 )
-from products.batch_exports.backend.tests.temporal.utils import (
-    mocked_start_batch_export_run,
-)
+from products.batch_exports.backend.tests.temporal.utils import mocked_start_batch_export_run
+from temporalio import activity
+from temporalio.client import WorkflowFailureError
+from temporalio.common import RetryPolicy
+from temporalio.testing import WorkflowEnvironment
+from temporalio.worker import UnsandboxedWorkflowRunner, Worker
 
 pytestmark = [
     pytest.mark.asyncio,
@@ -292,7 +284,7 @@ async def test_insert_into_http_activity_throws_on_bad_http_status(
             await activity_environment.run(insert_into_http_activity, insert_inputs)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def http_batch_export(ateam, http_config, interval, exclude_events, temporal_client):
     destination_data = {
         "type": "HTTP",

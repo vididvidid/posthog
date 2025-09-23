@@ -3,17 +3,14 @@ import json
 import uuid
 from datetime import datetime
 from typing import Optional, Union
-from unittest.mock import patch, ANY
 from urllib.parse import parse_qsl, urlparse
-
 from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.core.cache import cache
 from django.test import override_settings
 from django.utils import timezone
 from freezegun import freeze_time
-from rest_framework.exceptions import ValidationError
-
 from posthog.constants import (
     ENTITY_ID,
     ENTITY_TYPE,
@@ -22,21 +19,9 @@ from posthog.constants import (
     TRENDS_LINEAR,
     TRENDS_TABLE,
 )
-from posthog.models import (
-    Action,
-    Cohort,
-    Entity,
-    Filter,
-    GroupTypeMapping,
-    Organization,
-    Person,
-)
+from posthog.models import Action, Cohort, Entity, Filter, Organization, Person
 from posthog.models.group.util import create_group
-from posthog.models.instance_setting import (
-    get_instance_setting,
-    override_instance_config,
-    set_instance_setting,
-)
+from posthog.models.instance_setting import get_instance_setting, override_instance_config, set_instance_setting
 from posthog.models.person.util import create_person_distinct_id
 from posthog.models.utils import uuid7
 from posthog.queries.trends.breakdown import BREAKDOWN_OTHER_STRING_LABEL
@@ -54,7 +39,10 @@ from posthog.test.base import (
     snapshot_clickhouse_queries,
 )
 from posthog.test.test_journeys import journeys_for
+from posthog.test.test_utils import create_group_type_mapping_without_created_at
 from posthog.utils import generate_cache_key
+from rest_framework.exceptions import ValidationError
+from unittest.mock import ANY, patch
 
 
 def breakdown_label(entity: Entity, value: Union[str, int]) -> dict[str, Optional[Union[str, int]]]:
@@ -7772,7 +7760,7 @@ class TestTrends(ClickhouseTestMixin, APIBaseTest):
     @snapshot_clickhouse_queries
     def test_trends_count_per_group_average_daily(self):
         self._create_event_count_per_actor_events()
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="shape", group_type_index=0
         )
         create_group(team_id=self.team.pk, group_type_index=0, group_key="bouba")
@@ -7821,7 +7809,7 @@ class TestTrends(ClickhouseTestMixin, APIBaseTest):
     @snapshot_clickhouse_queries
     def test_trends_count_per_group_average_aggregated(self):
         self._create_event_count_per_actor_events()
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="shape", group_type_index=0
         )
         create_group(team_id=self.team.pk, group_type_index=0, group_key="bouba")
@@ -7884,10 +7872,10 @@ class TestTrends(ClickhouseTestMixin, APIBaseTest):
         assert daily_response[2]["days"] == ["2020-01-01", "2020-02-01", "2020-03-01"]
 
     def _create_groups(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=1
         )
 
@@ -8491,10 +8479,10 @@ class TestTrends(ClickhouseTestMixin, APIBaseTest):
 
     @snapshot_clickhouse_queries
     def test_filtering_by_multiple_groups_person_on_events(self):
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="organization", group_type_index=0
         )
-        GroupTypeMapping.objects.create(
+        create_group_type_mapping_without_created_at(
             team=self.team, project_id=self.team.project_id, group_type="company", group_type_index=2
         )
 

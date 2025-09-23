@@ -1,7 +1,6 @@
-from unittest.mock import patch
-
 from posthog.models.async_migration import AsyncMigration, MigrationStatus
 from posthog.test.base import BaseTest
+from unittest.mock import patch
 
 
 class AsyncMigrationBaseTest(BaseTest):

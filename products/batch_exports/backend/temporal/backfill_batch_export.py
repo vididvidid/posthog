@@ -14,13 +14,8 @@ import temporalio.exceptions
 import temporalio.workflow
 from asgiref.sync import sync_to_async
 from django.conf import settings
-
 from posthog.batch_exports.models import BatchExportBackfill
-from posthog.batch_exports.service import (
-    BackfillBatchExportInputs,
-    BackfillDetails,
-    unpause_batch_export,
-)
+from posthog.batch_exports.service import BackfillBatchExportInputs, BackfillDetails, unpause_batch_export
 from posthog.temporal.common.base import PostHogWorkflow
 from posthog.temporal.common.client import connect
 from posthog.temporal.common.heartbeat import Heartbeater

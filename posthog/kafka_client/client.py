@@ -1,23 +1,20 @@
 import json
+from collections.abc import Callable
 from enum import StrEnum
 from typing import Any, Optional
-from collections.abc import Callable
 
 from django.conf import settings
-from kafka import KafkaConsumer as KC
-from kafka import KafkaProducer as KP
-from kafka.producer.future import (
-    FutureProduceResult,
-    FutureRecordMetadata,
-    RecordMetadata,
+from kafka import (
+    KafkaConsumer as KC,
+    KafkaProducer as KP,
 )
+from kafka.producer.future import FutureProduceResult, FutureRecordMetadata, RecordMetadata
 from kafka.structs import TopicPartition
-from statshog.defaults.django import statsd
-from structlog import get_logger
-
 from posthog.clickhouse.client import sync_execute
 from posthog.kafka_client import helper
 from posthog.utils import SingletonDecorator
+from statshog.defaults.django import statsd
+from structlog import get_logger
 
 KAFKA_PRODUCER_RETRIES = 5
 

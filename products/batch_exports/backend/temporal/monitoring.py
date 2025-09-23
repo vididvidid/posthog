@@ -3,19 +3,16 @@ import json
 from dataclasses import dataclass
 from uuid import UUID
 
-from temporalio import activity, workflow
-from temporalio.common import RetryPolicy
-
 from posthog.batch_exports.models import BatchExport, BatchExportRun
-from posthog.batch_exports.service import (
-    afetch_batch_export_runs_in_range,
-    aupdate_records_total_count,
-)
+from posthog.batch_exports.service import afetch_batch_export_runs_in_range, aupdate_records_total_count
 from posthog.batch_exports.sql import EVENT_COUNT_BY_INTERVAL
 from posthog.temporal.common.base import PostHogWorkflow
 from posthog.temporal.common.clickhouse import get_client
 from posthog.temporal.common.heartbeat import Heartbeater
-from posthog.temporal.common.logger import bind_contextvars, get_logger
+from posthog.temporal.common.logger import get_logger
+from structlog.contextvars import bind_contextvars
+from temporalio import activity, workflow
+from temporalio.common import RetryPolicy
 
 LOGGER = get_logger(__name__)
 

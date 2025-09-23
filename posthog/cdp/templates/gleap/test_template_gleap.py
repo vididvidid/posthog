@@ -1,8 +1,6 @@
 from inline_snapshot import snapshot
+from posthog.cdp.templates.gleap.template_gleap import template as template_gleap
 from posthog.cdp.templates.helpers import BaseHogFunctionTemplateTest
-from posthog.cdp.templates.gleap.template_gleap import (
-    template as template_gleap,
-)
 
 
 def create_inputs(**kwargs):

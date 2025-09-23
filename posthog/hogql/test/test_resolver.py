@@ -5,18 +5,17 @@ from uuid import UUID
 import pytest
 from django.test import override_settings
 from freezegun import freeze_time
-
 from posthog.hogql import ast
 from posthog.hogql.constants import MAX_SELECT_RETURNED_ROWS
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.database.database import create_hogql_database
 from posthog.hogql.database.models import (
     DateTimeDatabaseField,
-    Table,
     ExpressionField,
     FieldTraverser,
     StringDatabaseField,
     StringJSONDatabaseField,
+    Table,
     TableGroup,
 )
 from posthog.hogql.database.schema.events import EventsTable

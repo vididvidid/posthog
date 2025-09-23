@@ -1,8 +1,6 @@
 from inline_snapshot import snapshot
+from posthog.cdp.templates.activecampaign.template_activecampaign import template as template_activecampaign
 from posthog.cdp.templates.helpers import BaseHogFunctionTemplateTest
-from posthog.cdp.templates.activecampaign.template_activecampaign import (
-    template as template_activecampaign,
-)
 
 
 def create_inputs(**kwargs):

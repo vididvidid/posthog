@@ -7,13 +7,12 @@ from posthog.models.property import Property
 if TYPE_CHECKING:
     from posthog.models.entity import Entity
 
-from rest_framework.exceptions import ValidationError
-
 from posthog.constants import (
     BIN_COUNT,
     DISPLAY,
     DROP_OFF,
     ENTRANCE_PERIOD_START,
+    FUNNEL_AGGREAGTE_BY_HOGQL,
     FUNNEL_CORRELATION_EVENT_EXCLUDE_PROPERTY_NAMES,
     FUNNEL_CORRELATION_EVENT_NAMES,
     FUNNEL_CORRELATION_EXCLUDE_EVENT_NAMES,
@@ -43,11 +42,11 @@ from posthog.constants import (
     FunnelCorrelationType,
     FunnelOrderType,
     FunnelVizType,
-    FUNNEL_AGGREAGTE_BY_HOGQL,
 )
 from posthog.models.filters.mixins.base import BaseParamMixin, FunnelWindowIntervalType
 from posthog.models.filters.mixins.utils import cached_property, include_dict
 from posthog.utils import relative_date_parse, str_to_bool
+from rest_framework.exceptions import ValidationError
 
 
 class FunnelFromToStepsMixin(BaseParamMixin):

@@ -3,7 +3,6 @@ import uuid
 
 import pytest
 import snowflake.connector
-
 from products.batch_exports.backend.api.destination_tests import (
     SnowflakeDatabaseTestStep,
     SnowflakeEstablishConnectionTestStep,
@@ -11,9 +10,7 @@ from products.batch_exports.backend.api.destination_tests import (
     SnowflakeWarehouseTestStep,
     Status,
 )
-from products.batch_exports.backend.temporal.destinations.snowflake_batch_export import (
-    load_private_key,
-)
+from products.batch_exports.backend.temporal.destinations.snowflake_batch_export import load_private_key
 
 REQUIRED_ENV_VARS = (
     "SNOWFLAKE_WAREHOUSE",

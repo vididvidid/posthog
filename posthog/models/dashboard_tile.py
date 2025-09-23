@@ -2,7 +2,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, QuerySet, UniqueConstraint
 from django.utils import timezone
-
 from posthog.models.dashboard import Dashboard
 from posthog.models.insight import generate_insight_filters_hash
 from posthog.models.utils import build_unique_relationship_check
@@ -54,6 +53,7 @@ class DashboardTile(models.Model):
     last_refresh = models.DateTimeField(blank=True, null=True)
     refreshing = models.BooleanField(null=True)
     refresh_attempt = models.IntegerField(null=True, blank=True)
+    filters_overrides = models.JSONField(default=dict, null=True, blank=True)
 
     deleted = models.BooleanField(null=True, blank=True)
 
@@ -135,14 +135,3 @@ class DashboardTile(models.Model):
             .filter(Q(insight__deleted=False) | Q(insight__isnull=True))
             .order_by("insight__order")
         )
-
-
-def get_tiles_ordered_by_position(dashboard: Dashboard, size: str = "xs") -> list[DashboardTile]:
-    tiles = list(
-        dashboard.tiles.select_related("insight", "text")
-        .exclude(insight__deleted=True)
-        .order_by("insight__order")
-        .all()
-    )
-    tiles.sort(key=lambda x: (x.layouts.get(size, {}).get("y", 100), x.layouts.get(size, {}).get("x", 100)))
-    return tiles

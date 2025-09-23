@@ -1,11 +1,7 @@
-from posthog.hogql.database.models import (
-    DateTimeDatabaseField,
-    StringDatabaseField,
-    StringJSONDatabaseField,
-)
+from posthog.hogql.database.models import DateTimeDatabaseField, StringDatabaseField, StringJSONDatabaseField
 from posthog.schema import DatabaseSchemaManagedViewTableKind
-from ._definitions import Schema, FieldsDict
 
+from ._definitions import FieldsDict, Schema
 
 FIELDS: FieldsDict = {
     "id": StringDatabaseField(name="id"),

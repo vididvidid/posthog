@@ -4,8 +4,6 @@ from datetime import timedelta
 from django.test import override_settings
 from freezegun import freeze_time
 from parameterized import parameterized
-from rest_framework import status
-
 from posthog.models import Element, ElementGroup, Organization
 from posthog.test.base import (
     APIBaseTest,
@@ -15,6 +13,7 @@ from posthog.test.base import (
     _create_person,
     snapshot_postgres_queries,
 )
+from rest_framework import status
 
 expected_autocapture_data_response_results: list[dict] = [
     {

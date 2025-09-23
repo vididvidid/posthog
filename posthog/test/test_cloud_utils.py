@@ -1,13 +1,10 @@
 from datetime import datetime, timedelta
 
 import pytest
+from posthog.cloud_utils import TEST_clear_instance_license_cache, get_cached_instance_license
+from posthog.test.base import BaseTest
 
 from ee.models.license import License
-from posthog.cloud_utils import (
-    TEST_clear_instance_license_cache,
-    get_cached_instance_license,
-)
-from posthog.test.base import BaseTest
 
 
 class TestCloudUtils(BaseTest):

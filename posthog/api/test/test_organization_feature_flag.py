@@ -1,20 +1,20 @@
 from typing import Any
-from unittest.mock import ANY
 
-from rest_framework import status
-
-from ee.models.rbac.organization_resource_access import OrganizationResourceAccess
 from posthog.api.dashboards.dashboard import Dashboard
 from posthog.constants import AvailableFeature
 from posthog.models import FeatureFlag
 from posthog.models.cohort import Cohort
 from posthog.models.cohort.util import sort_cohorts_topologically
-from products.early_access_features.backend.models import EarlyAccessFeature
 from posthog.models.experiment import Experiment
 from posthog.models.surveys.survey import Survey
 from posthog.models.team.team import Team
 from posthog.models.user import User
 from posthog.test.base import APIBaseTest, QueryMatchingTest, snapshot_postgres_queries
+from products.early_access_features.backend.models import EarlyAccessFeature
+from rest_framework import status
+from unittest.mock import ANY
+
+from ee.models.rbac.organization_resource_access import OrganizationResourceAccess
 
 
 class TestOrganizationFeatureFlagGet(APIBaseTest, QueryMatchingTest):

@@ -1,7 +1,7 @@
 from datetime import datetime
+
 from freezegun import freeze_time
 from posthog.hogql.modifiers import create_default_modifiers_for_team
-
 from posthog.hogql.query import execute_hogql_query
 from posthog.hogql.timings import HogQLTimings
 from posthog.hogql_queries.insights.trends.trends_query_builder import TrendsQueryBuilder
@@ -11,8 +11,8 @@ from posthog.schema import (
     BreakdownFilter,
     BreakdownType,
     ChartDisplayType,
-    DateRange,
     DataWarehouseNode,
+    DateRange,
     EventsNode,
     HogQLQueryResponse,
     TrendsFilter,

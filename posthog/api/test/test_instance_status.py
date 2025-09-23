@@ -1,9 +1,7 @@
-from unittest.mock import patch
-
 import pytest
-from rest_framework import status
-
 from posthog.test.base import APIBaseTest
+from rest_framework import status
+from unittest.mock import patch
 
 
 class TestInstanceStatus(APIBaseTest):

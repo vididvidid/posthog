@@ -1,13 +1,12 @@
 import json
 
-
 from posthog.models.event_ingestion_restriction_config import (
+    DYNAMIC_CONFIG_REDIS_KEY_PREFIX,
     EventIngestionRestrictionConfig,
     RestrictionType,
-    DYNAMIC_CONFIG_REDIS_KEY_PREFIX,
 )
-from posthog.test.base import BaseTest
 from posthog.redis import get_client
+from posthog.test.base import BaseTest
 
 
 class TestEventIngestionRestrictionConfig(BaseTest):

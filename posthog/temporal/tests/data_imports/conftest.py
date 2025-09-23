@@ -2,7 +2,6 @@ import functools
 import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from unittest import mock
 
 import aioboto3
 import pytest
@@ -11,10 +10,6 @@ from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.test import override_settings
 from dlt.common.configuration.specs.aws_credentials import AwsCredentials
-from temporalio.common import RetryPolicy
-from temporalio.testing import WorkflowEnvironment
-from temporalio.worker import UnsandboxedWorkflowRunner, Worker
-
 from posthog.constants import DATA_WAREHOUSE_TASK_QUEUE
 from posthog.hogql.query import execute_hogql_query
 from posthog.schema import HogQLQueryResponse
@@ -24,6 +19,10 @@ from posthog.temporal.utils import ExternalDataWorkflowInputs
 from posthog.warehouse.models import ExternalDataJob
 from posthog.warehouse.models.external_data_job import get_latest_run_if_exists
 from posthog.warehouse.models.external_table_definitions import external_tables
+from temporalio.common import RetryPolicy
+from temporalio.testing import WorkflowEnvironment
+from temporalio.worker import UnsandboxedWorkflowRunner, Worker
+from unittest import mock
 
 BUCKET_NAME = "test-pipeline"
 SESSION = aioboto3.Session()
@@ -946,6 +945,37 @@ def stripe_credit_note():
 
 
 @pytest.fixture
+def stripe_customer_balance_transaction():
+    return json.loads(
+        """
+        {
+            "object": "list",
+            "url": "/v1/credit_notes",
+            "has_more": false,
+            "data": [
+                {
+                    "amount": 123,
+                    "checkout_session": null,
+                    "created": 1744275509,
+                    "credit_note": null,
+                    "currency": "usd",
+                    "customer": "cus_OyUnzb0sjasdsd",
+                    "description": "Credit expired",
+                    "ending_balance": 0,
+                    "id": "cbtxn_1RCGwLEuIatRXSdz53OwYsdfsd",
+                    "invoice_id": null,
+                    "livemode": true,
+                    "metadata": {},
+                    "object": "customer_balance_transaction",
+                    "type": "adjustment"
+                }
+            ]
+        }
+        """
+    )
+
+
+@pytest.fixture
 def zendesk_brands():
     return json.loads(
         """
@@ -1242,6 +1272,7 @@ def zendesk_tickets():
             "next_page": "https://{subdomain}.zendesk.com/api/v2/incremental/tickets.json?per_page=3&start_time=1390362485",
             "tickets": [
                 {
+                    "generated_timestamp": 1,
                     "assignee_id": 235323,
                     "collaborator_ids": [
                         35334,

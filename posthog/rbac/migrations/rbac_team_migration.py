@@ -1,9 +1,10 @@
-from django.db import transaction
-from ee.models.rbac.access_control import AccessControl
-from ee.models.explicit_team_membership import ExplicitTeamMembership
 import structlog
-from posthog.models.organization import Organization, OrganizationMembership
+from django.db import transaction
 from posthog.exceptions_capture import capture_exception
+from posthog.models.organization import Organization, OrganizationMembership
+
+from ee.models.explicit_team_membership import ExplicitTeamMembership
+from ee.models.rbac.access_control import AccessControl
 
 logger = structlog.get_logger(__name__)
 

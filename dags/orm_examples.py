@@ -1,6 +1,5 @@
 import dagster
 from django.db.models import Q
-
 from posthog.models.async_deletion import AsyncDeletion, DeletionType
 
 

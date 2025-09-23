@@ -1,12 +1,12 @@
 import pytest
 from posthog.hogql_queries.insights.trends.utils import get_properties_chain, is_groups_math
 from posthog.schema import (
-    BreakdownType,
-    EventsNode,
     BaseMathType,
-    PropertyMathType,
+    BreakdownType,
     CountPerActorMathType,
+    EventsNode,
     MathGroupTypeIndex,
+    PropertyMathType,
 )
 
 

@@ -1,11 +1,6 @@
-from posthog.clickhouse.client import sync_execute, query_with_columns
+from posthog.clickhouse.client import query_with_columns, sync_execute
 from posthog.models import Team
-from posthog.test.base import (
-    _create_event,
-    ClickhouseTestMixin,
-    BaseTest,
-    ClickhouseDestroyTablesMixin,
-)
+from posthog.test.base import BaseTest, ClickhouseDestroyTablesMixin, ClickhouseTestMixin, _create_event
 
 distinct_id_counter = 0
 session_id_counter = 0

@@ -3,12 +3,11 @@ from typing import cast
 from zoneinfo import ZoneInfo
 
 from freezegun import freeze_time
-
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_expr
 from posthog.hogql_queries.insights.funnels.funnel_aggregation_operations import FirstTimeForUserAggregationQuery
 from posthog.hogql_queries.insights.funnels.funnel_query_context import FunnelQueryContext
-from posthog.schema import EventsNode, FunnelsFilter, FunnelsQuery, DateRange
+from posthog.schema import DateRange, EventsNode, FunnelsFilter, FunnelsQuery
 from posthog.test.base import APIBaseTest, ClickhouseTestMixin
 
 

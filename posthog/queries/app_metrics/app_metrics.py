@@ -2,7 +2,6 @@ import json
 from datetime import datetime, timedelta
 
 from django.utils.timezone import now
-
 from posthog.clickhouse.client import sync_execute
 from posthog.models.app_metrics.sql import (
     QUERY_APP_METRICS_DELIVERY_RATE,
@@ -13,11 +12,8 @@ from posthog.models.app_metrics.sql import (
 from posthog.models.event.util import format_clickhouse_timestamp
 from posthog.models.filters.mixins.base import IntervalType
 from posthog.models.team.team import Team
-from posthog.queries.app_metrics.serializers import (
-    AppMetricsErrorsRequestSerializer,
-    AppMetricsRequestSerializer,
-)
-from posthog.queries.util import format_ch_timestamp, get_time_in_seconds_for_period
+from posthog.queries.app_metrics.serializers import AppMetricsErrorsRequestSerializer, AppMetricsRequestSerializer
+from posthog.queries.util import format_ch_timestamp
 from posthog.utils import relative_date_parse
 
 
@@ -82,7 +78,6 @@ class AppMetricsQuery:
             "date_to": format_ch_timestamp(self.date_to),
             "timezone": self.team.timezone,
             "interval": self.interval,
-            "with_fill_step": get_time_in_seconds_for_period(self.interval),
         }
 
     @property

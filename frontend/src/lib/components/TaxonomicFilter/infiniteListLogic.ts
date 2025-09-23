@@ -134,7 +134,10 @@ export const infiniteListLogic = kea<infiniteListLogicType>([
                         [`${values.group?.searchAlias || 'search'}`]: swappedInQuery || searchQuery,
                         limit,
                         offset,
-                        excluded_properties: JSON.stringify(excludedProperties),
+                        excluded_properties:
+                            excludedProperties && excludedProperties.length > 0
+                                ? JSON.stringify(excludedProperties)
+                                : undefined,
                         properties: propertyAllowList ? propertyAllowList.join(',') : undefined,
                         ...(props.showNumericalPropsOnly ? { is_numerical: 'true' } : {}),
                         // TODO: remove this filter once we can support behavioral cohorts for feature flags, it's only
@@ -335,8 +338,18 @@ export const infiniteListLogic = kea<infiniteListLogicType>([
             },
         ],
         localItems: [
-            (s) => [s.rawLocalItems, s.searchQuery, s.swappedInQuery, s.fuse],
-            (rawLocalItems, searchQuery, swappedInQuery, fuse): ListStorage => {
+            (s) => [s.rawLocalItems, s.searchQuery, s.swappedInQuery, s.fuse, s.group],
+            (rawLocalItems, searchQuery, swappedInQuery, fuse, group): ListStorage => {
+                if (group.localItemsSearch) {
+                    const filtered = group.localItemsSearch(rawLocalItems || [], swappedInQuery || searchQuery)
+                    return {
+                        results: filtered,
+                        count: filtered.length,
+                        searchQuery: swappedInQuery || searchQuery,
+                        originalQuery: swappedInQuery ? searchQuery : undefined,
+                    }
+                }
+
                 if (rawLocalItems) {
                     const filteredItems =
                         swappedInQuery || searchQuery

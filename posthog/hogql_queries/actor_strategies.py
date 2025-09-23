@@ -1,17 +1,14 @@
-from typing import cast, Literal, Optional
-
-from django.db import connection
-from django.db import connections
-
-from posthog.hogql import ast
-from posthog.hogql.property import property_to_expr
-from posthog.hogql.parser import parse_expr
-from posthog.hogql_queries.insights.paginators import HogQLHasMorePaginator
-from posthog.hogql_queries.utils.recordings_helper import RecordingsHelper
-from posthog.models import Team, Group
-from posthog.schema import ActorsQuery, InsightActorsQuery, TrendsQuery
+from typing import Literal, Optional, cast
 
 import orjson as json
+from django.db import connection, connections
+from posthog.hogql import ast
+from posthog.hogql.parser import parse_expr
+from posthog.hogql.property import property_to_expr
+from posthog.hogql_queries.insights.paginators import HogQLHasMorePaginator
+from posthog.hogql_queries.utils.recordings_helper import RecordingsHelper
+from posthog.models import Group, Team
+from posthog.schema import ActorsQuery, InsightActorsQuery, TrendsQuery
 
 
 class ActorStrategy:

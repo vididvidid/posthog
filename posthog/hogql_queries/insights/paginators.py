@@ -2,10 +2,10 @@ from typing import Any, Optional, Union, cast
 
 from posthog.hogql import ast
 from posthog.hogql.constants import (
-    get_max_limit_for_context,
-    get_default_limit_for_context,
-    LimitContext,
     DEFAULT_RETURNED_ROWS,
+    LimitContext,
+    get_default_limit_for_context,
+    get_max_limit_for_context,
 )
 from posthog.hogql.query import execute_hogql_query
 from posthog.schema import HogQLQueryResponse

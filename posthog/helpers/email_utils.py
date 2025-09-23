@@ -4,8 +4,9 @@ while maintaining backwards compatibility with existing data that may have mixed
 """
 
 import logging
+from typing import TYPE_CHECKING, Optional
+
 import posthoganalytics
-from typing import Optional, TYPE_CHECKING
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.models import QuerySet
 

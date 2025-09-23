@@ -1,7 +1,7 @@
+import datetime
 import json
 from typing import Optional
 
-import datetime
 from posthog.models import EventDefinition, EventProperty, PropertyDefinition
 from posthog.models.group.sql import GROUPS_TABLE
 from posthog.models.person.sql import PERSONS_TABLE

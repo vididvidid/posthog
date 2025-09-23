@@ -6,37 +6,32 @@ import structlog
 from dateutil import parser
 from django.conf import settings
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
-
-from posthog.hogql.resolver_utils import extract_select_queries
-from posthog.queries.util import PersonPropertiesMode
-from posthog.clickhouse.client.connection import Workload, ClickHouseUser
-from posthog.clickhouse.query_tagging import tag_queries, tags_context, Feature
 from posthog.clickhouse.client import sync_execute
+from posthog.clickhouse.client.connection import ClickHouseUser, Workload
+from posthog.clickhouse.query_tagging import Feature, tag_queries, tags_context
 from posthog.constants import PropertyOperatorType
 from posthog.hogql import ast
-from posthog.hogql.constants import LimitContext, HogQLGlobalSettings
+from posthog.hogql.constants import HogQLGlobalSettings, LimitContext
 from posthog.hogql.hogql import HogQLContext
 from posthog.hogql.modifiers import create_default_modifiers_for_team
 from posthog.hogql.printer import print_ast
+from posthog.hogql.resolver_utils import extract_select_queries
 from posthog.models import Action, Filter, Team
 from posthog.models.action.util import format_action_filter
-from posthog.models.cohort.cohort import Cohort, CohortOrEmpty
+from posthog.models.cohort.cohort import Cohort, CohortOrEmpty, CohortPeople
 from posthog.models.cohort.sql import (
     CALCULATE_COHORT_PEOPLE_SQL,
     GET_COHORT_SIZE_SQL,
     GET_COHORTS_BY_PERSON_UUID,
     GET_PERSON_ID_BY_PRECALCULATED_COHORT_ID,
-    GET_STATIC_COHORT_SIZE_SQL,
     GET_STATIC_COHORTPEOPLE_BY_PERSON_UUID,
     RECALCULATE_COHORT_BY_ID,
 )
-from posthog.models.person.sql import (
-    INSERT_PERSON_STATIC_COHORT,
-    PERSON_STATIC_COHORT_TABLE,
-)
+from posthog.models.person.sql import INSERT_PERSON_STATIC_COHORT, PERSON_STATIC_COHORT_TABLE
 from posthog.models.property import Property, PropertyGroup
 from posthog.queries.person_distinct_id_query import get_team_distinct_ids_query
+from posthog.queries.util import PersonPropertiesMode
+from rest_framework.exceptions import ValidationError
 
 # temporary marker to denote when cohortpeople table started being populated
 TEMP_PRECALCULATED_MARKER = parser.parse("2021-06-07T15:00:00+00:00")
@@ -287,20 +282,10 @@ def insert_static_cohort(person_uuids: list[Optional[uuid.UUID]], cohort_id: int
     sync_execute(INSERT_PERSON_STATIC_COHORT, persons)
 
 
-def get_static_cohort_size(*, cohort_id: int, team_id: int) -> Optional[int]:
-    tag_queries(cohort_id=cohort_id, team_id=team_id, name="get_static_cohort_size", feature=Feature.COHORT)
-    count_result = sync_execute(
-        GET_STATIC_COHORT_SIZE_SQL,
-        {
-            "cohort_id": cohort_id,
-            "team_id": team_id,
-        },
-    )
+def get_static_cohort_size(*, cohort_id: int, team_id: int) -> int:
+    count = CohortPeople.objects.filter(cohort_id=cohort_id, person__team_id=team_id).count()
 
-    if count_result and len(count_result) and len(count_result[0]):
-        return count_result[0][0]
-    else:
-        return None
+    return count
 
 
 def recalculate_cohortpeople(
@@ -466,7 +451,21 @@ def simplified_cohort_filter_properties(cohort: Cohort, team: Team, is_negated=F
 def _get_cohort_ids_by_person_uuid(uuid: str, team_id: int) -> list[int]:
     tag_queries(name="get_cohort_ids_by_person_uuid", feature=Feature.COHORT)
     res = sync_execute(GET_COHORTS_BY_PERSON_UUID, {"person_id": uuid, "team_id": team_id})
-    return [row[0] for row in res]
+    cohort_ids_from_cohortperson = [row[0] for row in res]
+    cohorts = Cohort.objects.filter(deleted=False, team_id=team_id, pk__in=cohort_ids_from_cohortperson)
+    values_list_result = cohorts.values_list("id", "version")
+    id_latest_version_map = dict(values_list_result)
+    cohort_ids = []
+    for row in res:
+        cohort_id_from_cohortperson = row[0]
+        version_from_cohortperson = row[1]
+        latest_version = id_latest_version_map.get(cohort_id_from_cohortperson)
+        if latest_version is None:
+            continue
+        if latest_version != version_from_cohortperson:
+            continue
+        cohort_ids.append(cohort_id_from_cohortperson)
+    return cohort_ids
 
 
 def _get_static_cohort_ids_by_person_uuid(uuid: str, team_id: int) -> list[int]:

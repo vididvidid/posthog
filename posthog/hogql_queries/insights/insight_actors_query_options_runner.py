@@ -6,15 +6,14 @@ from posthog.hogql_queries.insights.trends.trends_query_runner import TrendsQuer
 from posthog.hogql_queries.query_runner import QueryRunner, get_query_runner
 from posthog.models.filters.mixins.utils import cached_property
 from posthog.schema import (
+    CachedInsightActorsQueryOptionsResponse,
     InsightActorsQueryOptions,
     InsightActorsQueryOptionsResponse,
-    CachedInsightActorsQueryOptionsResponse,
 )
 
 
 class InsightActorsQueryOptionsRunner(QueryRunner):
     query: InsightActorsQueryOptions
-    response: InsightActorsQueryOptionsResponse
     cached_response: CachedInsightActorsQueryOptionsResponse
 
     @cached_property

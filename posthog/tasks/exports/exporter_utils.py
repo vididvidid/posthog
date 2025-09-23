@@ -3,7 +3,6 @@ from typing import Optional
 
 import requests
 import structlog
-
 from django.conf import settings
 
 logger = structlog.get_logger(__name__)

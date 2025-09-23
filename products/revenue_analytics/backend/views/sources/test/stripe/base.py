@@ -5,9 +5,8 @@ This module provides common setup and utilities specifically for testing
 Stripe-based revenue analytics view sources.
 """
 
-from unittest.mock import Mock
-from uuid import uuid4
 from typing import Optional
+from uuid import uuid4
 
 from posthog.schema import CurrencyCode
 from posthog.temporal.data_imports.sources.stripe.constants import (
@@ -22,6 +21,7 @@ from posthog.warehouse.models.external_data_source import ExternalDataSource
 from posthog.warehouse.models.table import DataWarehouseTable
 from products.revenue_analytics.backend.views.core import SourceHandle
 from products.revenue_analytics.backend.views.sources.test.base import RevenueAnalyticsViewSourceBaseTest
+from unittest.mock import Mock
 
 
 def create_mock_stripe_external_data_source(team, schemas: Optional[list[str]] = None):

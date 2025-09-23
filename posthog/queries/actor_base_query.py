@@ -1,17 +1,9 @@
 import uuid
 from datetime import datetime, timedelta
-from typing import (
-    Any,
-    Literal,
-    Optional,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import Any, Literal, Optional, TypedDict, Union, cast
 
 from django.db.models import OuterRef, Subquery
 from django.db.models.query import Prefetch, QuerySet
-
 from posthog.constants import INSIGHT_FUNNELS, INSIGHT_PATHS, INSIGHT_TRENDS
 from posthog.hogql_queries.actor_strategies import PersonStrategy
 from posthog.hogql_queries.insights.paginators import HogQLHasMorePaginator

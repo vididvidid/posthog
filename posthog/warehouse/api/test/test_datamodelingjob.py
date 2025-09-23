@@ -1,5 +1,4 @@
 from django.utils import timezone
-
 from posthog.models.team.team import Team
 from posthog.test.base import APIBaseTest
 from posthog.warehouse.models.data_modeling_job import DataModelingJob

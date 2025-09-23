@@ -1,19 +1,18 @@
 from typing import Union
 
 from freezegun import freeze_time
-
 from posthog.hogql_queries.web_analytics.stats_table import WebStatsTableQueryRunner
 from posthog.hogql_queries.web_analytics.web_analytics_query_runner import _sample_rate_from_count
 from posthog.hogql_queries.web_analytics.web_overview import WebOverviewQueryRunner
 from posthog.schema import (
     DateRange,
-    WebStatsTableQuery,
-    WebStatsBreakdown,
-    WebOverviewQuery,
     EventPropertyFilter,
     PersonPropertyFilter,
     PropertyOperator,
     SamplingRate,
+    WebOverviewQuery,
+    WebStatsBreakdown,
+    WebStatsTableQuery,
 )
 from posthog.test.base import (
     APIBaseTest,

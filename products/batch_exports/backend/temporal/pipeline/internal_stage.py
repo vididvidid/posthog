@@ -7,28 +7,18 @@ from dataclasses import dataclass
 
 import aioboto3
 from django.conf import settings
-from temporalio import activity
-
 from posthog.clickhouse import query_tagging
 from posthog.clickhouse.query_tagging import Product
+from temporalio import activity
 
 if typing.TYPE_CHECKING:
     from types_aiobotocore_s3.type_defs import ObjectIdentifierTypeDef
 
-from posthog.batch_exports.service import (
-    BackfillDetails,
-    BatchExportField,
-    BatchExportModel,
-    BatchExportSchema,
-)
+from posthog.batch_exports.service import BackfillDetails, BatchExportField, BatchExportModel, BatchExportSchema
 from posthog.sync import database_sync_to_async
-from posthog.temporal.common.clickhouse import (
-    ClickHouseClientTimeoutError,
-    ClickHouseQueryStatus,
-    get_client,
-)
+from posthog.temporal.common.clickhouse import ClickHouseClientTimeoutError, ClickHouseQueryStatus, get_client
 from posthog.temporal.common.heartbeat import Heartbeater
-from posthog.temporal.common.logger import bind_contextvars, get_logger
+from posthog.temporal.common.logger import get_write_only_logger
 from products.batch_exports.backend.temporal.batch_exports import default_fields
 from products.batch_exports.backend.temporal.record_batch_model import resolve_batch_exports_model
 from products.batch_exports.backend.temporal.spmc import (
@@ -49,8 +39,9 @@ from products.batch_exports.backend.temporal.sql import (
     EXPORT_TO_S3_FROM_PERSONS_BACKFILL,
 )
 from products.batch_exports.backend.temporal.utils import set_status_to_running_task
+from structlog.contextvars import bind_contextvars
 
-LOGGER = get_logger()
+LOGGER = get_write_only_logger()
 
 
 def _get_s3_endpoint_url() -> str:
@@ -323,11 +314,12 @@ def _get_clickhouse_s3_staging_folder_url(
     container.
     """
     bucket = settings.BATCH_EXPORT_INTERNAL_STAGING_BUCKET
+    region = settings.BATCH_EXPORT_OBJECT_STORAGE_REGION
     # in these environments this will be a URL for MinIO
     if settings.DEBUG or settings.TEST:
         base_url = f"{settings.BATCH_EXPORT_OBJECT_STORAGE_ENDPOINT}/{bucket}/"
     else:
-        base_url = f"https://{bucket}.s3.amazonaws.com/"
+        base_url = f"https://{bucket}.s3.{region}.amazonaws.com/"
 
     folder = get_s3_staging_folder(batch_export_id, data_interval_start, data_interval_end)
     return f"{base_url}{folder}"

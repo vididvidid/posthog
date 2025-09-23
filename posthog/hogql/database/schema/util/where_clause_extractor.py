@@ -8,9 +8,8 @@ from posthog.hogql.context import HogQLContext
 from posthog.hogql.database.models import DatabaseField, LazyJoinToAdd, LazyTableToAdd
 from posthog.hogql.errors import NotImplementedError, QueryError
 from posthog.hogql.functions.mapping import HOGQL_COMPARISON_MAPPING
-from posthog.hogql.helpers.timestamp_visitor import is_time_or_interval_constant, is_simple_timestamp_field_expression
-
-from posthog.hogql.visitor import clone_expr, CloningVisitor, TraversingVisitor
+from posthog.hogql.helpers.timestamp_visitor import is_simple_timestamp_field_expression, is_time_or_interval_constant
+from posthog.hogql.visitor import CloningVisitor, TraversingVisitor, clone_expr
 
 SESSION_BUFFER_DAYS = 3
 
@@ -362,6 +361,14 @@ class SessionMinTimestampWhereClauseExtractorV2(SessionMinTimestampWhereClauseEx
     time_buffer = ast.Call(name="toIntervalDay", args=[ast.Constant(value=SESSION_BUFFER_DAYS)])
 
 
+class SessionMinTimestampWhereClauseExtractorV3(SessionMinTimestampWhereClauseExtractor):
+    timestamp_field = ast.Call(
+        name="UUIDv7ToDateTime",
+        args=[ast.Field(chain=["raw_sessions_v3", "session_id_v7"])],
+    )
+    time_buffer = ast.Call(name="toIntervalDay", args=[ast.Constant(value=SESSION_BUFFER_DAYS)])
+
+
 def has_tombstone(expr: ast.Expr, tombstone_string: str) -> bool:
     visitor = HasTombstoneVisitor(tombstone_string)
     visitor.visit(expr)
@@ -395,9 +402,10 @@ class RewriteTimestampFieldVisitor(CloningVisitor):
 
     def visit_field(self, node: ast.Field) -> ast.Expr:
         from posthog.hogql.database.schema.events import EventsTable
+        from posthog.hogql.database.schema.session_replay_events import RawSessionReplayEventsTable
         from posthog.hogql.database.schema.sessions_v1 import SessionsTableV1
         from posthog.hogql.database.schema.sessions_v2 import SessionsTableV2
-        from posthog.hogql.database.schema.session_replay_events import RawSessionReplayEventsTable
+        from posthog.hogql.database.schema.sessions_v3 import SessionsTableV3
 
         if node.type and isinstance(node.type, ast.FieldType):
             resolved_field = node.type.resolve_database_field(self.context)
@@ -414,6 +422,10 @@ class RewriteTimestampFieldVisitor(CloningVisitor):
                     )
                     or (
                         isinstance(table, SessionsTableV2)
+                        and resolved_field.name in ("$start_timestamp", "$end_timestamp")
+                    )
+                    or (
+                        isinstance(table, SessionsTableV3)
                         and resolved_field.name in ("$start_timestamp", "$end_timestamp")
                     )
                     or (isinstance(table, RawSessionReplayEventsTable) and resolved_field.name == "min_first_timestamp")

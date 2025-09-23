@@ -9,7 +9,6 @@ import typing
 import uuid
 
 import aiohttp.client_exceptions
-
 from posthog.models.raw_sessions.sql import RAW_SESSION_TABLE_BACKFILL_SELECT_SQL
 from posthog.temporal.common.clickhouse import ClickHouseClient
 from posthog.temporal.tests.utils.datetimes import date_range
@@ -154,7 +153,7 @@ async def insert_event_values_in_clickhouse(
                 ],
             )
             break  # Success, exit the loop
-        except aiohttp.client_exceptions.ClientOSError:
+        except (aiohttp.client_exceptions.ClientOSError, aiohttp.client_exceptions.ServerDisconnectedError):
             if attempt >= max_attempts:
                 raise
 

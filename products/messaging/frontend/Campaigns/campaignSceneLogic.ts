@@ -1,5 +1,5 @@
 import { actions, kea, path, props, reducers, selectors } from 'kea'
-import { actionToUrl, urlToAction } from 'kea-router'
+import { actionToUrl, router, urlToAction } from 'kea-router'
 
 import { Scene } from 'scenes/sceneTypes'
 import { urls } from 'scenes/urls'
@@ -8,7 +8,7 @@ import { Breadcrumb } from '~/types'
 
 import type { campaignSceneLogicType } from './campaignSceneLogicType'
 
-export const CampaignTabs = ['overview', 'workflow', 'logs', 'metrics'] as const
+export const CampaignTabs = ['workflow', 'logs', 'metrics'] as const
 export type CampaignTab = (typeof CampaignTabs)[number]
 
 export interface CampaignSceneLogicProps {
@@ -24,7 +24,7 @@ export const campaignSceneLogic = kea<campaignSceneLogicType>([
     }),
     reducers({
         currentTab: [
-            'overview' as CampaignTab,
+            'workflow' as CampaignTab,
             {
                 setCurrentTab: (_, { tab }) => tab,
             },
@@ -35,11 +35,6 @@ export const campaignSceneLogic = kea<campaignSceneLogicType>([
             () => [(_, props) => props.id as CampaignSceneLogicProps['id']],
             (id): Breadcrumb[] => {
                 return [
-                    {
-                        key: Scene.Messaging,
-                        name: 'Messaging',
-                        path: urls.messaging('campaigns'),
-                    },
                     {
                         key: [Scene.Messaging, 'campaigns'],
                         name: 'Campaigns',
@@ -54,7 +49,13 @@ export const campaignSceneLogic = kea<campaignSceneLogicType>([
         ],
     }),
     actionToUrl(({ props, values }) => ({
-        setCurrentTab: () => [urls.messagingCampaign(props.id || 'new', values.currentTab)],
+        setCurrentTab: () => {
+            return [
+                urls.messagingCampaign(props.id || 'new', values.currentTab),
+                router.values.searchParams,
+                router.values.hashParams,
+            ]
+        },
     })),
     urlToAction(({ actions, values }) => ({
         '/messaging/campaigns/:id/:tab': ({ tab }) => {

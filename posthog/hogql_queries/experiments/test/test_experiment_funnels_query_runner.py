@@ -6,12 +6,8 @@ from django.utils import timezone
 from flaky import flaky
 from freezegun import freeze_time
 from parameterized import parameterized
-from rest_framework.exceptions import ValidationError
-
 from posthog.constants import ExperimentNoResultsErrorKeys
-from posthog.hogql_queries.experiments.experiment_funnels_query_runner import (
-    ExperimentFunnelsQueryRunner,
-)
+from posthog.hogql_queries.experiments.experiment_funnels_query_runner import ExperimentFunnelsQueryRunner
 from posthog.models.experiment import Experiment, ExperimentHoldout
 from posthog.models.feature_flag.feature_flag import FeatureFlag
 from posthog.schema import (
@@ -32,6 +28,7 @@ from posthog.test.base import (
     snapshot_clickhouse_queries,
 )
 from posthog.test.test_journeys import journeys_for
+from rest_framework.exceptions import ValidationError
 
 
 class TestExperimentFunnelsQueryRunner(ClickhouseTestMixin, APIBaseTest):

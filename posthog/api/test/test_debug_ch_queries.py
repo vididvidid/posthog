@@ -1,8 +1,6 @@
-from unittest.mock import patch
-
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
-
 from posthog.test.base import APIBaseTest
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+from unittest.mock import patch
 
 
 class TestDebugCHQuery(APIBaseTest):

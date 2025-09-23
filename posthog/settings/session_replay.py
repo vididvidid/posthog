@@ -1,6 +1,6 @@
+from django.conf import settings
 from posthog.settings import get_from_env, get_list
 from posthog.utils import str_to_bool
-from django.conf import settings
 
 # TRICKY: we saw unusual memory usage behavior in EU clickhouse cluster
 # when allowing use of denormalized properties in some session replay event queries
@@ -55,3 +55,5 @@ PLAYLIST_COUNTER_PROCESSING_COOLDOWN_SECONDS = get_from_env(
 PLAYLIST_COUNTER_PROCESSING_PLAYLISTS_LIMIT = get_from_env(
     "PLAYLIST_COUNTER_PROCESSING_PLAYLISTS_LIMIT", 2500, type_cast=int
 )
+
+APP_STATE_LOGGING_SAMPLE_RATE = get_from_env("APP_STATE_LOGGING_SAMPLE_RATE", "0")

@@ -760,6 +760,9 @@ mod tests {
                     content: crate::parse::content::ContentType::Captured,
                 },
                 sink: super::config::SinkConfig::NoOp,
+                import_events: true,
+                generate_identify_events: false,
+                generate_group_identify_events: false,
             },
             secrets: super::config::JobSecrets {
                 secrets: std::collections::HashMap::new(),

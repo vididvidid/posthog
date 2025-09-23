@@ -1,16 +1,14 @@
-import json
-from temporalio import activity, workflow, common
-from datetime import timedelta
 import dataclasses
-import structlog
+import json
 import logging
+from datetime import timedelta
 
-from posthog.temporal.common.base import PostHogWorkflow
-from posthog.exceptions_capture import capture_exception
-from posthog.temporal.common.heartbeat import Heartbeater
+import structlog
 from asgiref.sync import sync_to_async
-from django.db import close_old_connections
-
+from posthog.exceptions_capture import capture_exception
+from posthog.temporal.common.base import PostHogWorkflow
+from posthog.temporal.common.heartbeat import Heartbeater
+from temporalio import activity, common, workflow
 
 logger = structlog.get_logger()
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +34,6 @@ async def run_quota_limiting_all_orgs(
 
             @sync_to_async
             def async_update_all_orgs_billing_quotas():
-                close_old_connections()
                 update_all_orgs_billing_quotas()
 
             await async_update_all_orgs_billing_quotas()

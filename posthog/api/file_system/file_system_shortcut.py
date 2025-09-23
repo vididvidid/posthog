@@ -1,10 +1,10 @@
 from typing import Any
-from django.db.models import QuerySet, Q
-from django.db.models.functions import Lower
-from rest_framework import serializers, viewsets
 
+from django.db.models import Q, QuerySet
+from django.db.models.functions import Lower
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.models.file_system.file_system_shortcut import FileSystemShortcut
+from rest_framework import serializers, viewsets
 
 
 class FileSystemShortcutSerializer(serializers.ModelSerializer):

@@ -1,29 +1,23 @@
-from typing import cast, Literal
+from typing import Literal, cast
 
 from posthog.hogql import ast
 from posthog.hogql.constants import LimitContext
 from posthog.hogql.parser import parse_select
-from posthog.hogql.property import (
-    property_to_expr,
-)
+from posthog.hogql.property import property_to_expr
 from posthog.hogql_queries.insights.paginators import HogQLHasMorePaginator
-from posthog.hogql_queries.web_analytics.web_analytics_query_runner import (
-    WebAnalyticsQueryRunner,
-    map_columns,
-)
+from posthog.hogql_queries.web_analytics.web_analytics_query_runner import WebAnalyticsQueryRunner, map_columns
 from posthog.schema import (
     CachedWebStatsTableQueryResponse,
-    WebStatsTableQueryResponse,
+    WebAnalyticsOrderByDirection,
+    WebAnalyticsOrderByFields,
     WebExternalClicksTableQuery,
     WebExternalClicksTableQueryResponse,
-    WebAnalyticsOrderByFields,
-    WebAnalyticsOrderByDirection,
+    WebStatsTableQueryResponse,
 )
 
 
-class WebExternalClicksTableQueryRunner(WebAnalyticsQueryRunner):
+class WebExternalClicksTableQueryRunner(WebAnalyticsQueryRunner[WebExternalClicksTableQueryResponse]):
     query: WebExternalClicksTableQuery
-    response: WebExternalClicksTableQueryResponse
     cached_response: CachedWebStatsTableQueryResponse
     paginator: HogQLHasMorePaginator
 

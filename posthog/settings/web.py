@@ -4,7 +4,6 @@ from datetime import timedelta
 
 import structlog
 from corsheaders.defaults import default_headers
-
 from posthog.scopes import get_scope_descriptions
 from posthog.settings.base_variables import BASE_DIR, DEBUG, TEST
 from posthog.settings.utils import get_from_env, get_list, str_to_bool
@@ -30,9 +29,11 @@ AXES_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]
 # NOTE: Add these definitions here and on `tach.toml`
 PRODUCTS_APPS = [
     "products.early_access_features",
+    "products.tasks",
     "products.links",
     "products.revenue_analytics",
     "products.user_interviews",
+    "products.llm_analytics",
 ]
 
 INSTALLED_APPS = [
@@ -88,6 +89,7 @@ MIDDLEWARE = [
     "posthog.middleware.CsrfOrKeyViewMiddleware",
     "posthog.middleware.QueryTimeCountingMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "posthog.middleware.SocialAuthExceptionMiddleware",
     "posthog.middleware.SessionAgeMiddleware",
     "posthog.middleware.ActivityLoggingMiddleware",
     "posthog.middleware.user_logging_context_middleware",
@@ -179,12 +181,14 @@ SOCIAL_AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.social_details",
     "social_core.pipeline.social_auth.social_uid",
     "social_core.pipeline.social_auth.auth_allowed",
+    "ee.api.authentication.social_auth_allowed",
     "social_core.pipeline.social_auth.social_user",
     "social_core.pipeline.social_auth.associate_by_email",
     "posthog.api.signup.social_create_user",
     "social_core.pipeline.social_auth.associate_user",
     "social_core.pipeline.social_auth.load_extra_data",
     "social_core.pipeline.user.user_details",
+    "posthog.api.authentication.social_login_notification",
 )
 
 SOCIAL_AUTH_STRATEGY = "social_django.strategy.DjangoStrategy"
@@ -194,6 +198,7 @@ SOCIAL_AUTH_FIELDS_STORED_IN_SESSION = [
     "user_name",
     "email_opt_in",
     "organization_name",
+    "reauth",
 ]
 SOCIAL_AUTH_GITHUB_SCOPE = ["user:email"]
 SOCIAL_AUTH_GITHUB_KEY: str | None = os.getenv("SOCIAL_AUTH_GITHUB_KEY")

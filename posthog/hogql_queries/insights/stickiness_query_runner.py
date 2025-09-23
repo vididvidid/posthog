@@ -1,14 +1,9 @@
 from datetime import timedelta
 from math import ceil
-from typing import Optional, Any, cast
+from typing import Any, Optional, cast
 
 from django.utils.timezone import now
-
-from posthog.caching.insights_api import (
-    BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL,
-    REDUCED_MINIMUM_INSIGHT_REFRESH_INTERVAL,
-)
-
+from posthog.caching.insights_api import BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL, REDUCED_MINIMUM_INSIGHT_REFRESH_INTERVAL
 from posthog.hogql import ast
 from posthog.hogql.constants import LimitContext
 from posthog.hogql.parser import parse_expr, parse_select
@@ -28,9 +23,9 @@ from posthog.schema import (
     CachedStickinessQueryResponse,
     DataWarehouseNode,
     EventsNode,
+    HogQLQueryModifiers,
     StickinessComputationMode,
     StickinessQuery,
-    HogQLQueryModifiers,
     StickinessQueryResponse,
 )
 
@@ -51,9 +46,8 @@ class SeriesWithExtras:
         self.is_previous_period_series = is_previous_period_series
 
 
-class StickinessQueryRunner(AnalyticsQueryRunner):
+class StickinessQueryRunner(AnalyticsQueryRunner[StickinessQueryResponse]):
     query: StickinessQuery
-    response: StickinessQueryResponse
     cached_response: CachedStickinessQueryResponse
     series: list[SeriesWithExtras]
 
@@ -170,7 +164,7 @@ class StickinessQueryRunner(AnalyticsQueryRunner):
 
         return cast(ast.SelectQuery, outer_query)
 
-    def to_query(self) -> ast.SelectSetQuery:
+    def to_query(self) -> ast.SelectQuery | ast.SelectSetQuery:
         return ast.SelectSetQuery.create_from_queries(self.to_queries(), "UNION ALL")
 
     def to_queries(self) -> list[ast.SelectQuery]:

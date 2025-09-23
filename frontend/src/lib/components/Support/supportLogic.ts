@@ -35,7 +35,8 @@ export function getPublicSupportSnippet(
     includeCurrentLocation = true
 ): string {
     if (!cloudRegion) {
-        return ''
+        // we don't call this without region being available, so we return some value so we can see errors in visual regression tests
+        return '🚫'
     }
     return (
         (includeCurrentLocation ? getCurrentLocationLink() : '') +
@@ -120,6 +121,16 @@ export const TARGET_AREA_TO_NAME = [
         title: 'General',
         options: [
             {
+                value: 'login',
+                'data-attr': `support-form-target-area-login`,
+                label: 'Authentication (incl. login, sign-up, invites)',
+            },
+            {
+                value: 'analytics_platform',
+                'data-attr': `support-form-target-area-analytics_platform`,
+                label: 'Analytics features (incl. alerts, subscriptions, exports, etc.)',
+            },
+            {
                 value: 'billing',
                 'data-attr': `support-form-target-area-billing`,
                 label: 'Billing',
@@ -138,11 +149,6 @@ export const TARGET_AREA_TO_NAME = [
                 value: 'data_management',
                 'data-attr': `support-form-target-area-data_management`,
                 label: 'Data management (incl. events, actions, properties)',
-            },
-            {
-                value: 'login',
-                'data-attr': `support-form-target-area-login`,
-                label: 'Authentication (incl. login, sign-up, invites)',
             },
             {
                 value: 'mobile',
@@ -175,9 +181,9 @@ export const TARGET_AREA_TO_NAME = [
         title: 'Individual product',
         options: [
             {
-                value: 'analytics',
-                'data-attr': `support-form-target-area-analytics`,
-                label: 'Product analytics (incl. insights, dashboards, annotations)',
+                value: 'data_warehouse',
+                'data-attr': `support-form-target-area-data_warehouse`,
+                label: 'Data warehouse (sources)',
             },
             {
                 value: 'batch_exports',
@@ -188,11 +194,6 @@ export const TARGET_AREA_TO_NAME = [
                 value: 'cdp_destinations',
                 'data-attr': `support-form-target-area-cdp_destinations`,
                 label: 'Destinations (real-time)',
-            },
-            {
-                value: 'data_warehouse',
-                'data-attr': `support-form-target-area-data_warehouse`,
-                label: 'Data warehouse (sources)',
             },
             {
                 value: 'error_tracking',
@@ -215,9 +216,9 @@ export const TARGET_AREA_TO_NAME = [
                 label: 'Group analytics',
             },
             {
-                value: 'llm-observability',
-                'data-attr': `support-form-target-area-llm-observability`,
-                label: 'LLM observability',
+                value: 'llm-analytics',
+                'data-attr': `support-form-target-area-llm-analytics`,
+                label: 'LLM analytics',
             },
             {
                 value: 'max-ai',
@@ -228,6 +229,11 @@ export const TARGET_AREA_TO_NAME = [
                 value: 'messaging',
                 'data-attr': `support-form-target-area-messaging`,
                 label: 'Messaging',
+            },
+            {
+                value: 'analytics',
+                'data-attr': `support-form-target-area-analytics`,
+                label: 'Product analytics (incl. insights, dashboards, etc.)',
             },
             {
                 value: 'revenue_analytics',

@@ -1,66 +1,45 @@
+from __future__ import annotations
+
 import json
+import logging
 import re
 import time
-import logging
-from typing import Any, Optional, cast
-from posthog.date_util import thirty_days_ago
 from datetime import datetime
-from django.db import transaction
-from django.db.models import QuerySet, Q, deletion, Prefetch
-from django.conf import settings
-from drf_spectacular.utils import OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-from rest_framework import (
-    exceptions,
-    request,
-    serializers,
-    status,
-    viewsets,
-)
-from posthog.api.utils import action
-from rest_framework.permissions import SAFE_METHODS, BasePermission
-from rest_framework.request import Request
-from rest_framework.response import Response
-from posthog.exceptions_capture import capture_exception
-from posthog.api.cohort import CohortSerializer
-from posthog.models.experiment import Experiment
-from posthog.models.feature_flag.local_evaluation import (
-    DATABASE_FOR_LOCAL_EVALUATION,
-    get_flags_response_for_local_evaluation,
-)
-from posthog.rbac.access_control_api_mixin import AccessControlViewSetMixin
-from posthog.rbac.user_access_control import UserAccessControlSerializerMixin
+from typing import Any, Optional, cast
 
+from django.conf import settings
+from django.db import transaction
+from django.db.models import Prefetch, Q, QuerySet, deletion
+from django.dispatch import receiver
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter
+from posthog.api.cohort import CohortSerializer
+from posthog.api.dashboards.dashboard import Dashboard
 from posthog.api.documentation import extend_schema
 from posthog.api.forbid_destroy_model import ForbidDestroyModel
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.api.shared import UserBasicSerializer
 from posthog.api.tagged_item import TaggedItemSerializerMixin, TaggedItemViewSetMixin
-from posthog.api.dashboards.dashboard import Dashboard
-from posthog.api.utils import ClassicBehaviorBooleanFieldSerializer
-from posthog.auth import PersonalAPIKeyAuthentication, TemporaryTokenAuthentication, ProjectSecretAPIKeyAuthentication
-from posthog.constants import FlagRequestType, SURVEY_TARGETING_FLAG_PREFIX
+from posthog.api.utils import ClassicBehaviorBooleanFieldSerializer, action
+from posthog.auth import PersonalAPIKeyAuthentication, ProjectSecretAPIKeyAuthentication, TemporaryTokenAuthentication
+from posthog.constants import SURVEY_TARGETING_FLAG_PREFIX, FlagRequestType
+from posthog.date_util import thirty_days_ago
 from posthog.event_usage import report_user_action
 from posthog.exceptions import Conflict
-from posthog.helpers.dashboard_templates import (
-    add_enriched_insights_to_feature_flag_dashboard,
-)
+from posthog.exceptions_capture import capture_exception
+from posthog.helpers.dashboard_templates import add_enriched_insights_to_feature_flag_dashboard
 from posthog.helpers.encrypted_flag_payloads import (
+    REDACTED_PAYLOAD_VALUE,
     encrypt_flag_payloads,
     get_decrypted_flag_payloads,
-    REDACTED_PAYLOAD_VALUE,
 )
 from posthog.models import FeatureFlag
-from posthog.models.activity_logging.activity_log import (
-    Detail,
-    changes_between,
-    load_activity,
-    log_activity,
-)
+from posthog.models.activity_logging.activity_log import Detail, changes_between, load_activity, log_activity
 from posthog.models.activity_logging.activity_page import activity_page_response
 from posthog.models.activity_logging.model_activity import ImpersonatedContext
 from posthog.models.cohort import Cohort
 from posthog.models.cohort.util import get_dependent_cohorts
+from posthog.models.experiment import Experiment
 from posthog.models.feature_flag import (
     FeatureFlagDashboards,
     can_user_edit_feature_flag,
@@ -69,20 +48,29 @@ from posthog.models.feature_flag import (
 )
 from posthog.models.feature_flag.flag_analytics import increment_request_count
 from posthog.models.feature_flag.flag_matching import check_flag_evaluation_query_is_ok
-from posthog.models.surveys.survey import Survey
-from posthog.models.property import Property
-from posthog.schema import PropertyOperator
-from posthog.models.feature_flag.flag_status import FeatureFlagStatusChecker, FeatureFlagStatus
-from posthog.permissions import ProjectSecretAPITokenPermission
-from posthog.queries.base import (
-    determine_parsed_date_for_property_matching,
+from posthog.models.feature_flag.flag_status import FeatureFlagStatus, FeatureFlagStatusChecker
+from posthog.models.feature_flag.local_evaluation import (
+    DATABASE_FOR_LOCAL_EVALUATION,
+    _get_flag_properties_from_filters,
+    get_flags_response_for_local_evaluation,
 )
-from posthog.rate_limit import BurstRateThrottle
-from ee.models.rbac.organization_resource_access import OrganizationResourceAccess
-from django.dispatch import receiver
+from posthog.models.feature_flag.types import PropertyFilterType
+from posthog.models.property import Property
 from posthog.models.signals import model_activity_signal
+from posthog.models.surveys.survey import Survey
+from posthog.permissions import ProjectSecretAPITokenPermission
+from posthog.queries.base import determine_parsed_date_for_property_matching
+from posthog.rate_limit import BurstRateThrottle
+from posthog.rbac.access_control_api_mixin import AccessControlViewSetMixin
+from posthog.rbac.user_access_control import UserAccessControlSerializerMixin
+from posthog.schema import PropertyOperator
 from posthog.settings.feature_flags import LOCAL_EVAL_RATE_LIMITS, REMOTE_CONFIG_RATE_LIMITS
+from rest_framework import exceptions, request, serializers, status, viewsets
+from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.request import Request
+from rest_framework.response import Response
 
+from ee.models.rbac.organization_resource_access import OrganizationResourceAccess
 
 BEHAVIOURAL_COHORT_FOUND_ERROR_CODE = "behavioral_cohort_found"
 
@@ -183,6 +171,7 @@ class FeatureFlagSerializer(
         help_text="Indicates the origin product of the feature flag. Choices: 'feature_flags', 'experiments', 'surveys', 'early_access_features', 'web_experiments'.",
     )
     _create_in_folder = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    _should_create_usage_dashboard = serializers.BooleanField(required=False, write_only=True, default=True)
 
     class Meta:
         model = FeatureFlag
@@ -217,6 +206,7 @@ class FeatureFlagSerializer(
             "status",
             "evaluation_runtime",
             "_create_in_folder",
+            "_should_create_usage_dashboard",
         ]
 
     def get_can_edit(self, feature_flag: FeatureFlag) -> bool:
@@ -442,16 +432,34 @@ class FeatureFlagSerializer(
         except FeatureFlag.DoesNotExist:
             raise serializers.ValidationError(f"Flag dependency references non-existent flag with ID {flag_id}")
 
+    def _get_properties_from_filters(self, filters: dict, property_type: PropertyFilterType | None = None):
+        """
+        Extract properties from filters by iterating through groups.
+
+        Args:
+            filters: The filters dictionary containing groups
+            property_type: Optional filter by property type (e.g., 'flag', 'cohort')
+
+        Yields:
+            Property dictionaries matching the criteria
+        """
+        for group in filters.get("groups", []):
+            for prop in group.get("properties", []):
+                if property_type is None or prop.get("type") == property_type:
+                    yield prop
+
+    def _get_cohort_properties_from_filters(self, filters: dict):
+        """Extract cohort properties from filters."""
+        return list(self._get_properties_from_filters(filters, PropertyFilterType.COHORT))
+
     def _extract_flag_dependencies(self, filters):
         """Extract flag dependencies from filters."""
         dependencies = set()
-        for group in filters.get("groups", []):
-            for property_filter in group.get("properties", []):
-                if property_filter.get("type") == "flag":
-                    flag_reference = property_filter.get("key")
-                    if flag_reference:
-                        flag_key = self._validate_flag_reference(flag_reference)
-                        dependencies.add(flag_key)
+        for flag_prop in _get_flag_properties_from_filters(filters):
+            flag_reference = flag_prop.get("key")
+            if flag_reference:
+                flag_key = self._validate_flag_reference(flag_reference)
+                dependencies.add(flag_key)
         return dependencies
 
     def _check_flag_circular_dependencies(self, filters):
@@ -517,6 +525,7 @@ class FeatureFlagSerializer(
             "creation_context", "feature_flags"
         )  # default to "feature_flags" if an alternative value is not provided
 
+        should_create_usage_dashboard = validated_data.pop("_should_create_usage_dashboard")
         self._update_filters(validated_data)
         encrypt_flag_payloads(validated_data)
 
@@ -538,7 +547,8 @@ class FeatureFlagSerializer(
 
         self._attempt_set_tags(tags, instance)
 
-        _create_usage_dashboard(instance, request.user)
+        if should_create_usage_dashboard:
+            _create_usage_dashboard(instance, request.user)
 
         if analytics_dashboards is not None:
             for dashboard in analytics_dashboards:
@@ -741,14 +751,11 @@ class FeatureFlagSerializer(
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         filters = representation.get("filters", {})
-        groups = filters.get("groups", [])
 
         # Get all cohort IDs used in the feature flag
         cohort_ids = set()
-        for group in groups:
-            for property in group.get("properties", []):
-                if property.get("type") == "cohort":
-                    cohort_ids.add(property.get("value"))
+        for cohort_prop in self._get_cohort_properties_from_filters(filters):
+            cohort_ids.add(cohort_prop.get("value"))
 
         # Use prefetched cohorts if available
         if hasattr(instance.team, "available_cohorts"):
@@ -765,10 +772,8 @@ class FeatureFlagSerializer(
             }
 
         # Add cohort names to the response
-        for group in groups:
-            for property in group.get("properties", []):
-                if property.get("type") == "cohort":
-                    property["cohort_name"] = cohorts.get(str(property.get("value")))
+        for cohort_prop in self._get_cohort_properties_from_filters(filters):
+            cohort_prop["cohort_name"] = cohorts.get(str(cohort_prop.get("value")))
 
         representation["filters"] = filters
         return representation

@@ -27,9 +27,14 @@ export interface ToolsDisplayProps {
     isFloating?: boolean
     tools: ToolRegistration[]
     bottomActions?: ReactNode
+    deepResearchMode?: boolean
 }
 
-export const ToolsDisplay: React.FC<ToolsDisplayProps> = ({ isFloating, tools, bottomActions }) => {
+export const ToolsDisplay: React.FC<ToolsDisplayProps> = ({ isFloating, tools, bottomActions, deepResearchMode }) => {
+    // Tools not available in deep research mode
+    if (deepResearchMode) {
+        return <></>
+    }
     // We show the tools reversed, so the ones registered last (scene-specific) are shown first
     const toolsInReverse = tools.toReversed()
 
@@ -37,7 +42,11 @@ export const ToolsDisplay: React.FC<ToolsDisplayProps> = ({ isFloating, tools, b
         <div className="flex items-center w-full justify-center cursor-default">
             <Tooltip
                 placement="bottom-end"
-                arrowOffset={10 /* 10px from right edge to align with the info icon */}
+                fallbackPlacements={['left']}
+                arrowOffset={
+                    (placement) =>
+                        placement.startsWith('bottom') ? 10 : 0 /* 10px from right edge to align with the info icon */
+                }
                 delayMs={50}
                 title={<ToolsExplanation toolsInReverse={toolsInReverse} />}
             >

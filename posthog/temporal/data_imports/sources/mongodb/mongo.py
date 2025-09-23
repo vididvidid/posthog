@@ -1,27 +1,24 @@
 from __future__ import annotations
 
 import collections
-from collections.abc import Iterator
 import contextlib
-from typing import Any, Optional
 import math
+from collections.abc import Iterator
+from typing import Any, Optional
 
+import certifi
 from bson import ObjectId
 from dlt.common.normalizers.naming.snake_case import NamingConvention
-from pymongo import MongoClient
-from pymongo.collection import Collection
-
 from posthog.exceptions_capture import capture_exception
-from posthog.temporal.common.logger import FilteringBoundLogger
 from posthog.temporal.data_imports.pipelines.helpers import incremental_type_to_initial_value
-
-from posthog.temporal.data_imports.pipelines.pipeline.typings import SourceResponse
-from posthog.temporal.data_imports.pipelines.pipeline.utils import (
-    DEFAULT_PARTITION_TARGET_SIZE_IN_BYTES,
-)
 from posthog.temporal.data_imports.pipelines.pipeline.consts import DEFAULT_CHUNK_SIZE
+from posthog.temporal.data_imports.pipelines.pipeline.typings import SourceResponse
+from posthog.temporal.data_imports.pipelines.pipeline.utils import DEFAULT_PARTITION_TARGET_SIZE_IN_BYTES
 from posthog.temporal.data_imports.sources.generated_configs import MongoDBSourceConfig
 from posthog.warehouse.types import IncrementalFieldType, PartitionSettings
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from structlog.types import FilteringBoundLogger
 
 
 def _process_nested_value(value: Any) -> Any:
@@ -102,7 +99,9 @@ def mongo_client(connection_string: str, connection_params: dict[str, Any]) -> I
     """Yield a MongoDB client with the given parameters."""
     # For SRV connections, use the full connection string
     if connection_params["is_srv"]:
-        client: MongoClient = MongoClient(connection_string, serverSelectionTimeoutMS=10000)
+        client: MongoClient = MongoClient(
+            connection_string, serverSelectionTimeoutMS=10000, tls=True, tlsCAFile=certifi.where()
+        )
         try:
             yield client
         finally:
@@ -168,7 +167,7 @@ def _get_partition_settings(
 
 def _parse_connection_string(connection_string: str) -> dict[str, Any]:
     """Parse MongoDB connection string and extract connection parameters."""
-    from urllib.parse import urlparse, parse_qs
+    from urllib.parse import parse_qs, urlparse
 
     # Handle mongodb:// and mongodb+srv:// schemes
     parsed = urlparse(connection_string)

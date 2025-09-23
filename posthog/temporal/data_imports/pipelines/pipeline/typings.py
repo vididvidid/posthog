@@ -3,9 +3,8 @@ from collections.abc import Iterable
 from typing import Any, Literal, Optional
 
 from dlt.common.data_types.typing import TDataType
-
-from posthog.temporal.common.logger import FilteringBoundLogger
 from posthog.warehouse.types import IncrementalFieldType
+from structlog.types import FilteringBoundLogger
 
 SortMode = Literal["asc", "desc"]
 PartitionMode = Literal["md5", "numerical", "datetime"]

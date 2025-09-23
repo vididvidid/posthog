@@ -11,18 +11,16 @@ import uuid
 from urllib.parse import urljoin
 
 import aiohttp
+import posthog.temporal.common.asyncpa as asyncpa
 import pyarrow as pa
 import requests
-import structlog
 from django.conf import settings
+from posthog.clickhouse import query_tagging
+from posthog.clickhouse.query_tagging import QueryTags, TemporalTags, get_query_tags
+from structlog import get_logger
 from temporalio import activity
 
-from posthog.clickhouse import query_tagging
-from posthog.clickhouse.query_tagging import get_query_tags, QueryTags, TemporalTags
-import posthog.temporal.common.asyncpa as asyncpa
-from posthog.temporal.common.logger import get_internal_logger
-
-logger = structlog.get_logger()
+LOGGER = get_logger(__name__)
 
 
 def encode_clickhouse_data(data: typing.Any, quote_char="'") -> bytes:
@@ -113,7 +111,6 @@ class ChunkBytesAsyncStreamIterator:
         data, end_of_chunk = await self._stream.readchunk()
 
         if data == b"" and end_of_chunk is False and self._stream.at_eof():
-            await logger.adebug("At EOF, stopping chunk iteration")
             raise StopAsyncIteration
 
         return data
@@ -235,9 +232,7 @@ class ClickHouseClient:
         self.ssl = ssl
         self.connector: None | aiohttp.TCPConnector = None
         self.session: None | aiohttp.ClientSession = None
-
-        logger = get_internal_logger()
-        self.logger = logger.bind(url=url, database=database, user=user)
+        self.logger = LOGGER.bind(url=url, database=database, user=user)
 
         if user:
             self.headers["X-ClickHouse-User"] = user
@@ -277,7 +272,7 @@ class ClickHouseClient:
                 raise_for_status=True,
             )
         except aiohttp.ClientResponseError as exc:
-            await self.logger.aexception("Failed ClickHouse liveness check", exc_info=exc)
+            self.logger.exception("Failed ClickHouse liveness check", exc_info=exc)
             return False
         return True
 
@@ -419,7 +414,15 @@ class ClickHouseClient:
         # TODO: Let clickhouse handle all parameter formatting.
         if query_parameters is not None:
             for key, value in query_parameters.items():
-                if key in query:
+                if key not in query:
+                    continue
+
+                if isinstance(value, list):
+                    # Encode lists of strings in case they contain single quotes.
+                    # This is intended only to handle `exclude_events` from batch
+                    # exports. A further refactor of this whole block is pending.
+                    params[f"param_{key}"] = encode_clickhouse_data(value).decode("utf-8")
+                else:
                     params[f"param_{key}"] = str(value)
         add_log_comment_param(params)
 
@@ -530,6 +533,7 @@ class ClickHouseClient:
                 SELECT type, exception
                 FROM clusterAllReplicas({{cluster_name:String}}, system.query_log)
                 WHERE query_id = {{query_id:String}}
+                    AND event_date >= yesterday() AND event_time >= now() - interval 24 hour
                     FORMAT JSONEachRow \
                 """
 

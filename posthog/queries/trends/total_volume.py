@@ -1,7 +1,7 @@
 import urllib.parse
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 from typing import Any, Union
-from collections.abc import Callable
 
 from posthog.clickhouse.query_tagging import tag_queries
 from posthog.constants import (

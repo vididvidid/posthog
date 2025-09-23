@@ -1,5 +1,4 @@
 from freezegun import freeze_time
-
 from posthog.models.filters.filter import Filter
 from posthog.queries.query_date_range import QueryDateRange
 from posthog.test.base import APIBaseTest

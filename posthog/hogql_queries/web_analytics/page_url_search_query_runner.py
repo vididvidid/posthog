@@ -1,22 +1,19 @@
 from posthog.hogql import ast
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.query import execute_hogql_query
-from posthog.hogql_queries.web_analytics.web_analytics_query_runner import (
-    WebAnalyticsQueryRunner,
-)
+from posthog.hogql_queries.web_analytics.web_analytics_query_runner import WebAnalyticsQueryRunner
 from posthog.schema import (
-    WebPageURLSearchQuery,
-    WebPageURLSearchQueryResponse,
     CachedWebPageURLSearchQueryResponse,
     PageURL,
+    WebPageURLSearchQuery,
+    WebPageURLSearchQueryResponse,
 )
 
 PAGE_URL_SEARCH_DEFAULT_LIMIT = 100
 
 
-class PageUrlSearchQueryRunner(WebAnalyticsQueryRunner):
+class PageUrlSearchQueryRunner(WebAnalyticsQueryRunner[WebPageURLSearchQueryResponse]):
     query: WebPageURLSearchQuery
-    response: WebPageURLSearchQueryResponse
     cached_response: CachedWebPageURLSearchQueryResponse
 
     def _get_url_column(self) -> ast.Expr:

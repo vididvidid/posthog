@@ -4,8 +4,6 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from temporalio.common import RetryPolicy, WorkflowIDReusePolicy
-
 from posthog.temporal.common.client import connect
 from posthog.temporal.data_imports.settings import WORKFLOWS as DATA_IMPORT_WORKFLOWS
 from posthog.temporal.delete_persons import WORKFLOWS as DELETE_PERSONS_WORKFLOWS
@@ -15,6 +13,7 @@ from posthog.temporal.salesforce_enrichment import WORKFLOWS as SALESFORCE_ENRIC
 from posthog.temporal.tests.utils.workflow import WORKFLOWS as TEST_WORKFLOWS
 from posthog.temporal.usage_reports import WORKFLOWS as USAGE_REPORTS_WORKFLOWS
 from products.batch_exports.backend.temporal import WORKFLOWS as BATCH_EXPORT_WORKFLOWS
+from temporalio.common import RetryPolicy, WorkflowIDReusePolicy
 
 
 class Command(BaseCommand):

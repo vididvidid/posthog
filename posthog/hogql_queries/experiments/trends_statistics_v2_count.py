@@ -1,4 +1,4 @@
-from rest_framework.exceptions import ValidationError
+import numpy as np
 from posthog.exceptions_capture import capture_exception
 from posthog.hogql_queries.experiments import (
     EXPECTED_LOSS_SIGNIFICANCE_LEVEL,
@@ -6,8 +6,8 @@ from posthog.hogql_queries.experiments import (
     MIN_PROBABILITY_FOR_SIGNIFICANCE,
 )
 from posthog.schema import ExperimentSignificanceCode, ExperimentVariantTrendsBaseStats
+from rest_framework.exceptions import ValidationError
 from scipy.stats import gamma
-import numpy as np
 
 Probability = float
 

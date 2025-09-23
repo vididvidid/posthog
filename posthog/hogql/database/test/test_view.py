@@ -1,4 +1,5 @@
 from typing import Literal
+
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.database.database import create_hogql_database
 from posthog.hogql.database.test.tables import (

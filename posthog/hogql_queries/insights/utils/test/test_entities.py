@@ -9,7 +9,6 @@ from posthog.schema import (
     PropertyOperator,
 )
 
-
 testdata_equals = [
     (EventsNode(), EventsNode(), True),
     (EventsNode(event="$pageview"), EventsNode(event="$pageview"), True),

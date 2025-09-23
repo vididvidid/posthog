@@ -1,15 +1,16 @@
 import datetime
-from dateutil import parser
 import hashlib
 from typing import Any, Optional
+
 import pyarrow as pa
 import requests
+from dateutil import parser
 from dlt.common.normalizers.naming.snake_case import NamingConvention
-from posthog.temporal.common.logger import FilteringBoundLogger
 from posthog.temporal.data_imports.pipelines.pipeline.typings import SourceResponse
 from posthog.temporal.data_imports.pipelines.pipeline.utils import table_from_iterator
 from posthog.temporal.data_imports.sources.generated_configs import DoItSourceConfig
 from posthog.warehouse.types import IncrementalField, IncrementalFieldType
+from structlog.types import FilteringBoundLogger
 
 DOIT_INCREMENTAL_FIELDS: list[IncrementalField] = [
     {

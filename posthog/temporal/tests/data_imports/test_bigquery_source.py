@@ -10,7 +10,6 @@ import pytest
 from django.conf import settings
 from django.test import override_settings
 from google.cloud import bigquery
-
 from posthog.clickhouse.client import sync_execute
 from posthog.models import Team
 from posthog.temporal.data_imports.workflow_activities.import_data_sync import (

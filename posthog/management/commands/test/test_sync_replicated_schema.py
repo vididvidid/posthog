@@ -1,6 +1,5 @@
 import pytest
 from django.conf import settings
-
 from posthog.clickhouse.client import sync_execute
 from posthog.conftest import create_clickhouse_tables
 from posthog.management.commands.sync_replicated_schema import Command

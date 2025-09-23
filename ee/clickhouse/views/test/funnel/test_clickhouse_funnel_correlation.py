@@ -1,10 +1,15 @@
 import json
 from datetime import datetime
-from unittest.mock import ANY
 
 import pytest
 from django.core.cache import cache
 from freezegun import freeze_time
+from posthog.constants import FunnelCorrelationType
+from posthog.models.element import Element
+from posthog.models.team import Team
+from posthog.test.base import BaseTest, _create_event, _create_person
+from posthog.test.test_journeys import journeys_for
+from unittest.mock import ANY
 
 from ee.clickhouse.views.test.funnel.util import (
     EventPattern,
@@ -13,11 +18,6 @@ from ee.clickhouse.views.test.funnel.util import (
     get_funnel_correlation_ok,
     get_people_for_correlation_ok,
 )
-from posthog.constants import FunnelCorrelationType
-from posthog.models.element import Element
-from posthog.models.team import Team
-from posthog.test.base import BaseTest, _create_event, _create_person
-from posthog.test.test_journeys import journeys_for
 
 
 @pytest.mark.clickhouse_only

@@ -1,6 +1,5 @@
 from django.core.management import call_command
 from django.db.models.signals import pre_save
-
 from posthog.models import Survey
 from posthog.models.surveys.survey import pre_save_survey
 from posthog.test.base import BaseTest

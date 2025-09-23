@@ -156,11 +156,7 @@ impl FlagRequest {
         };
 
         match distinct_id.len() {
-            0 => {
-                tracing::warn!("Empty distinct_id provided in request");
-                Err(FlagError::EmptyDistinctId)
-            }
-            1..=200 => Ok(distinct_id.to_owned()),
+            0..=200 => Ok(distinct_id.to_owned()),
             _ => Ok(distinct_id.chars().take(200).collect()),
         }
     }
@@ -168,11 +164,13 @@ impl FlagRequest {
     /// Extracts the properties from the request.
     /// If the request contains person_properties, they are returned.
     pub fn extract_properties(&self) -> HashMap<String, Value> {
-        let mut properties = HashMap::new();
         if let Some(person_properties) = &self.person_properties {
+            let mut properties = HashMap::with_capacity(person_properties.len());
             properties.extend(person_properties.clone());
+            properties
+        } else {
+            HashMap::new()
         }
-        properties
     }
 
     /// Checks if feature flags should be disabled for this request.
@@ -197,7 +195,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn empty_distinct_id_not_accepted() {
+    fn empty_distinct_id_is_accepted() {
         let json = json!({
             "distinct_id": "",
             "token": "my_token1",
@@ -207,8 +205,8 @@ mod tests {
         let flag_payload = FlagRequest::from_bytes(bytes).expect("failed to parse request");
 
         match flag_payload.extract_distinct_id() {
-            Err(FlagError::EmptyDistinctId) => (),
-            _ => panic!("expected empty distinct id error"),
+            Ok(distinct_id) => assert_eq!(distinct_id, ""),
+            Err(e) => panic!("expected empty distinct_id to be accepted, got error: {e}"),
         };
     }
 

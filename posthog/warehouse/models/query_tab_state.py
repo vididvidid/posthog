@@ -1,6 +1,6 @@
 from django.db import models
-from posthog.models.utils import CreatedMetaFields, DeletedMetaFields, UUIDTModel
 from posthog.models.team import Team
+from posthog.models.utils import CreatedMetaFields, DeletedMetaFields, UUIDTModel
 
 
 class QueryTabState(CreatedMetaFields, UUIDTModel, DeletedMetaFields):

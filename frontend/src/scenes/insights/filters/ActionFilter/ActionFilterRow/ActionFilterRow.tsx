@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { IconCopy, IconEllipsis, IconFilter, IconPencil, IconTrash, IconWarning } from '@posthog/icons'
 import {
     LemonBadge,
+    LemonCheckbox,
     LemonDivider,
     LemonMenu,
     LemonSelect,
@@ -23,15 +24,21 @@ import { PropertyKeyInfo } from 'lib/components/PropertyKeyInfo'
 import { SeriesGlyph, SeriesLetter } from 'lib/components/SeriesGlyph'
 import { defaultDataWarehousePopoverFields } from 'lib/components/TaxonomicFilter/taxonomicFilterLogic'
 import { DataWarehousePopoverField, TaxonomicFilterGroupType } from 'lib/components/TaxonomicFilter/types'
-import { TaxonomicPopover, TaxonomicStringPopover } from 'lib/components/TaxonomicPopover/TaxonomicPopover'
+import {
+    TaxonomicPopover,
+    TaxonomicPopoverProps,
+    TaxonomicStringPopover,
+} from 'lib/components/TaxonomicPopover/TaxonomicPopover'
 import { LemonButton } from 'lib/lemon-ui/LemonButton'
 import { LemonDropdown } from 'lib/lemon-ui/LemonDropdown'
 import { Tooltip } from 'lib/lemon-ui/Tooltip'
 import { IconWithCount, SortableDragIcon } from 'lib/lemon-ui/icons'
 import { capitalizeFirstLetter, getEventNamesForAction } from 'lib/utils'
 import { databaseTableListLogic } from 'scenes/data-management/database/databaseTableListLogic'
+import { funnelDataLogic } from 'scenes/funnels/funnelDataLogic'
 import { GroupIntroductionFooter } from 'scenes/groups/GroupsIntroduction'
 import { insightDataLogic } from 'scenes/insights/insightDataLogic'
+import { insightLogic } from 'scenes/insights/insightLogic'
 import { isAllEventsEntityFilter } from 'scenes/insights/utils'
 import {
     COUNT_PER_ACTOR_MATH_DEFINITIONS,
@@ -47,15 +54,16 @@ import { MathType, NodeKind } from '~/queries/schema/schema-general'
 import {
     TRAILING_MATH_TYPES,
     getMathTypeWarning,
-    isCalendarHeatmapQuery,
     isInsightVizNode,
     isStickinessQuery,
+    isTrendsQuery,
 } from '~/queries/utils'
 import {
     ActionFilter,
     ActionFilter as ActionFilterType,
     BaseMathType,
     ChartDisplayCategory,
+    ChartDisplayType,
     CountPerActorMathType,
     EntityType,
     EntityTypes,
@@ -177,11 +185,13 @@ export function ActionFilterRow({
     dataWarehousePopoverFields = defaultDataWarehousePopoverFields,
     filtersLeftPadding = false,
     addFilterDocLink,
-}: ActionFilterRowProps): JSX.Element {
+    excludedProperties,
+}: ActionFilterRowProps & Pick<TaxonomicPopoverProps, 'excludedProperties'>): JSX.Element {
     const { entityFilterVisible } = useValues(logic)
     const {
         updateFilter,
         selectFilter,
+        updateFilterOptional,
         updateFilterMath,
         removeLocalFilter,
         updateFilterProperty,
@@ -194,6 +204,17 @@ export function ActionFilterRow({
 
     const mountedInsightDataLogic = insightDataLogic.findMounted({ dashboardItemId: typeKey })
     const query = mountedInsightDataLogic?.values?.query
+
+    const isFunnelContext = mathAvailability === MathAvailability.FunnelsOnly
+
+    // Always call hooks for React compliance - provide safe defaults for non-funnel contexts
+    const { insightProps: funnelInsightProps } = useValues(
+        insightLogic({ dashboardItemId: isFunnelContext ? (typeKey as any) : 'new' })
+    )
+    const { isStepOptional: funnelIsStepOptional } = useValues(funnelDataLogic(funnelInsightProps))
+
+    // Only use the funnel results when in funnel context
+    const isStepOptional = isFunnelContext ? funnelIsStepOptional : () => false
 
     const [isHogQLDropdownVisible, setIsHogQLDropdownVisible] = useState(false)
     const [isMenuVisible, setIsMenuVisible] = useState(false)
@@ -325,6 +346,7 @@ export function ActionFilterRow({
             disabled={disabled || readOnly}
             showNumericalPropsOnly={showNumericalPropsOnly}
             dataWarehousePopoverFields={dataWarehousePopoverFields}
+            excludedProperties={excludedProperties}
         />
     )
 
@@ -596,6 +618,32 @@ export function ActionFilterRow({
                                                         ),
                                                     },
                                                     {
+                                                        label: () => (
+                                                            <>
+                                                                {index > 0 && (
+                                                                    <>
+                                                                        <Tooltip title="Optional steps show conversion rates from the last mandatory step, but are not necessary to move to the next step in the funnel">
+                                                                            <div className="px-2 py-1">
+                                                                                <LemonCheckbox
+                                                                                    checked={!!filter.optionalInFunnel}
+                                                                                    onChange={(checked) => {
+                                                                                        updateFilterOptional({
+                                                                                            ...filter,
+                                                                                            optionalInFunnel: checked,
+                                                                                            index,
+                                                                                        })
+                                                                                    }}
+                                                                                    label="Optional step"
+                                                                                />
+                                                                            </div>
+                                                                        </Tooltip>
+                                                                        <LemonDivider />
+                                                                    </>
+                                                                )}
+                                                            </>
+                                                        ),
+                                                    },
+                                                    {
                                                         label: () => renameRowButton,
                                                     },
                                                     {
@@ -617,7 +665,7 @@ export function ActionFilterRow({
                                             <LemonBadge
                                                 position="top-right"
                                                 size="small"
-                                                visible={math !== undefined}
+                                                visible={math !== undefined || isStepOptional(index + 1)}
                                             />
                                         </div>
                                     </>
@@ -667,6 +715,7 @@ export function ActionFilterRow({
                                 : []
                         }
                         addFilterDocLink={addFilterDocLink}
+                        excludedProperties={excludedProperties}
                     />
                 </div>
             )}
@@ -722,7 +771,11 @@ function useMathSelectorOptions({
     mathGroupTypeIndex,
 }: MathSelectorProps): LemonSelectOptions<string> {
     const isStickiness = query && isInsightVizNode(query) && isStickinessQuery(query.source)
-    const isCalendarHeatmap = query && isInsightVizNode(query) && isCalendarHeatmapQuery(query.source)
+    const isCalendarHeatmap =
+        query &&
+        isInsightVizNode(query) &&
+        isTrendsQuery(query.source) &&
+        query.source.trendsFilter?.display === ChartDisplayType.CalendarHeatmap
 
     const {
         needsUpgradeForGroups,

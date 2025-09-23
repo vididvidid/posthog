@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any, Optional, cast
-from collections.abc import Callable
 
 from posthog import settings as app_settings
 from posthog.caching.utils import ThresholdMode, staleness_threshold_map
@@ -16,18 +16,17 @@ from posthog.hogql_queries.insights.paginators import HogQLHasMorePaginator
 from posthog.hogql_queries.query_runner import AnalyticsQueryRunner
 from posthog.schema import (
     CachedHogQLQueryResponse,
-    HogQLQuery,
-    HogQLASTQuery,
-    HogQLQueryResponse,
     DashboardFilter,
-    HogQLFilters,
     DateRange,
+    HogQLASTQuery,
+    HogQLFilters,
+    HogQLQuery,
+    HogQLQueryResponse,
 )
 
 
-class HogQLQueryRunner(AnalyticsQueryRunner):
+class HogQLQueryRunner(AnalyticsQueryRunner[HogQLQueryResponse]):
     query: HogQLQuery | HogQLASTQuery
-    response: HogQLQueryResponse
     cached_response: CachedHogQLQueryResponse
     settings: Optional[HogQLGlobalSettings]
 

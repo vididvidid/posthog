@@ -1,6 +1,6 @@
 from collections import defaultdict
-from datetime import datetime
 from collections.abc import Iterable
+from datetime import datetime
 
 from posthog.hogql import ast
 from posthog.hogql.query import execute_hogql_query

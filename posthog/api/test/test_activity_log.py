@@ -3,10 +3,9 @@ from typing import Any, Optional
 
 from freezegun import freeze_time
 from freezegun.api import FrozenDateTimeFactory, StepTickTimeFactory
-from rest_framework import status
-
 from posthog.models import User
 from posthog.test.base import APIBaseTest, QueryMatchingTest
+from rest_framework import status
 
 
 def _feature_flag_json_payload(key: str) -> dict:
@@ -181,7 +180,7 @@ class TestActivityLog(APIBaseTest, QueryMatchingTest):
         res = self.client.get(f"/api/projects/{self.team.id}/activity_log")
 
         assert res.status_code == status.HTTP_200_OK
-        assert len(res.json()["results"]) == 31
+        assert len(res.json()["results"]) == 35
 
     def test_can_list_all_activity_filtered_by_scope(self) -> None:
         res = self.client.get(f"/api/projects/{self.team.id}/activity_log?scope=FeatureFlag")

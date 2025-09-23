@@ -1,41 +1,31 @@
 import datetime
+from decimal import Decimal
+from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import pytest
-from uuid import UUID
-
-from zoneinfo import ZoneInfo
 from django.test import override_settings
 from django.utils import timezone
 from freezegun import freeze_time
-
 from posthog.errors import InternalCHQueryError
 from posthog.hogql import ast
 from posthog.hogql.errors import QueryError
 from posthog.hogql.property import property_to_expr
 from posthog.hogql.query import execute_hogql_query
 from posthog.hogql.test.utils import (
+    execute_hogql_query_with_timings,
     pretty_print_in_tests,
     pretty_print_response_in_tests,
-    execute_hogql_query_with_timings,
 )
 from posthog.models import Cohort
-from posthog.models.exchange_rate.currencies import SUPPORTED_CURRENCY_CODES
 from posthog.models.cohort.util import recalculate_cohortpeople
+from posthog.models.exchange_rate.currencies import SUPPORTED_CURRENCY_CODES
 from posthog.models.utils import UUIDT, uuid7
-from posthog.session_recordings.queries.test.session_replay_sql import (
-    produce_replay_summary,
-)
-from posthog.schema import HogQLFilters, EventPropertyFilter, DateRange, QueryTiming, SessionPropertyFilter
+from posthog.schema import DateRange, EventPropertyFilter, HogQLFilters, QueryTiming, SessionPropertyFilter
+from posthog.session_recordings.queries.test.session_replay_sql import produce_replay_summary
 from posthog.settings import HOGQL_INCREASED_MAX_EXECUTION_TIME
-from posthog.test.base import (
-    APIBaseTest,
-    ClickhouseTestMixin,
-    _create_event,
-    _create_person,
-    flush_persons_and_events,
-)
+from posthog.test.base import APIBaseTest, ClickhouseTestMixin, _create_event, _create_person, flush_persons_and_events
 from unittest.mock import patch
-from decimal import Decimal
 
 
 class TestQuery(ClickhouseTestMixin, APIBaseTest):
@@ -616,6 +606,21 @@ class TestQuery(ClickhouseTestMixin, APIBaseTest):
                 pretty=False,
             )
             self.assertEqual(response.results, [([2, 4, 6], 1)])
+            assert pretty_print_response_in_tests(response, self.team.pk) == self.snapshot
+
+    @pytest.mark.usefixtures("unittest_snapshot")
+    def test_hogql_unnecessary_ifnull(self):
+        # https://github.com/PostHog/posthog/issues/23077
+        query = """
+            select toDate(timestamp) as timestamp, count()
+            from events
+            where timestamp >= addDays(today(), -10)
+            group by timestamp
+            limit 100
+        """
+        with freeze_time("2025-02-15 22:52:00"):
+            response = execute_hogql_query(query, team=self.team, pretty=False)
+            self.assertEqual(response.results, [])
             assert pretty_print_response_in_tests(response, self.team.pk) == self.snapshot
 
     @pytest.mark.usefixtures("unittest_snapshot")

@@ -3,12 +3,11 @@ from typing import Any, Optional, TypedDict
 import structlog
 from django.http.request import HttpRequest
 from django.http.response import JsonResponse
+from posthog.clickhouse.query_tagging import get_query_tags
+from posthog.cloud_utils import is_cloud
+from posthog.exceptions_capture import capture_exception
 from rest_framework import status
 from rest_framework.exceptions import APIException
-from posthog.exceptions_capture import capture_exception
-from posthog.clickhouse.query_tagging import get_query_tags
-
-from posthog.cloud_utils import is_cloud
 
 logger = structlog.get_logger(__name__)
 

@@ -1,6 +1,5 @@
 import pytest
 from django import db
-
 from posthog.models import Dashboard, User, UserScenePersonalisation
 from posthog.test.base import BaseTest
 

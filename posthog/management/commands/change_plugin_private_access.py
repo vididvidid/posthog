@@ -4,7 +4,6 @@ import uuid
 import structlog
 from django.core.management import CommandError
 from django.core.management.base import BaseCommand
-
 from posthog.models import Organization
 from posthog.models.plugin import Plugin
 

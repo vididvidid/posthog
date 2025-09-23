@@ -4,18 +4,17 @@ from uuid import UUID
 
 import pytest
 from clickhouse_driver import Client
+from posthog.clickhouse.cluster import ClickhouseCluster
+from posthog.models.async_deletion import AsyncDeletion, DeletionType
+from posthog.models.person.sql import PERSON_DISTINCT_ID_OVERRIDES_TABLE
 
 from dags.deletes import (
     AdhocEventDeletesDictionary,
     AdhocEventDeletesTable,
-    deletes_job,
-    PendingDeletesTable,
     PendingDeletesDictionary,
+    PendingDeletesTable,
+    deletes_job,
 )
-
-from posthog.clickhouse.cluster import ClickhouseCluster
-from posthog.models.async_deletion import AsyncDeletion, DeletionType
-from posthog.models.person.sql import PERSON_DISTINCT_ID_OVERRIDES_TABLE
 
 
 @pytest.mark.django_db

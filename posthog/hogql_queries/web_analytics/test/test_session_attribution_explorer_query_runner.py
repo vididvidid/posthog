@@ -1,6 +1,5 @@
 from typing import Optional
 
-
 from posthog.hogql.constants import LimitContext
 from posthog.hogql_queries.web_analytics.session_attribution_explorer_query_runner import (
     SessionAttributionExplorerQueryRunner,
@@ -8,13 +7,13 @@ from posthog.hogql_queries.web_analytics.session_attribution_explorer_query_runn
 from posthog.models.utils import uuid7
 from posthog.schema import (
     DateRange,
-    SessionTableVersion,
-    HogQLQueryModifiers,
-    SessionAttributionExplorerQuery,
     Filters,
+    HogQLQueryModifiers,
+    PropertyOperator,
+    SessionAttributionExplorerQuery,
     SessionAttributionGroupBy,
     SessionPropertyFilter,
-    PropertyOperator,
+    SessionTableVersion,
 )
 from posthog.test.base import APIBaseTest, ClickhouseTestMixin, _create_event, snapshot_clickhouse_queries
 

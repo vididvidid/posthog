@@ -1,24 +1,23 @@
 import json
 from typing import cast
+
 from posthog.api.element import ElementSerializer
-
-
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_select
 from posthog.hogql.query import execute_hogql_query
 from posthog.hogql_queries.query_runner import AnalyticsQueryRunner
 from posthog.models.element.element import chain_to_elements
 from posthog.schema import (
+    CachedSessionsTimelineQueryResponse,
     EventType,
     SessionsTimelineQuery,
     SessionsTimelineQueryResponse,
-    CachedSessionsTimelineQueryResponse,
     TimelineEntry,
 )
 from posthog.utils import relative_date_parse
 
 
-class SessionsTimelineQueryRunner(AnalyticsQueryRunner):
+class SessionsTimelineQueryRunner(AnalyticsQueryRunner[SessionsTimelineQueryResponse]):
     """
     ## How does the sessions timeline work?
 
@@ -37,7 +36,6 @@ class SessionsTimelineQueryRunner(AnalyticsQueryRunner):
     EVENT_LIMIT = 1000
 
     query: SessionsTimelineQuery
-    response: SessionsTimelineQueryResponse
     cached_response: CachedSessionsTimelineQueryResponse
 
     def _get_events_subquery(self) -> ast.SelectQuery:

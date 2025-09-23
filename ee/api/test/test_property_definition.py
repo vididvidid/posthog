@@ -4,14 +4,14 @@ import pytest
 from django.db.utils import IntegrityError
 from django.utils import timezone
 from freezegun import freeze_time
-from rest_framework import status
-
-from ee.models.license import License, LicenseManager
-from ee.models.property_definition import EnterprisePropertyDefinition
 from posthog.constants import AvailableFeature
 from posthog.models import ActivityLog, EventProperty, Tag
 from posthog.models.property_definition import PropertyDefinition
 from posthog.test.base import APIBaseTest
+from rest_framework import status
+
+from ee.models.license import License, LicenseManager
+from ee.models.property_definition import EnterprisePropertyDefinition
 
 
 class TestPropertyDefinitionEnterpriseAPI(APIBaseTest):

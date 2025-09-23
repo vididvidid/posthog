@@ -1,5 +1,5 @@
-from typing import Optional
 from collections.abc import Generator
+from typing import Optional
 
 from posthog import schema
 from posthog.hogql import ast

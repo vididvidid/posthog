@@ -1,6 +1,5 @@
 import pytest
 from django.test import override_settings
-
 from posthog.hogql import ast
 from posthog.hogql.errors import QueryError
 from posthog.hogql.parser import parse_expr
@@ -11,12 +10,7 @@ from posthog.models.cohort.util import recalculate_cohortpeople
 from posthog.models.team.team import Team
 from posthog.models.utils import UUIDT
 from posthog.schema import HogQLQueryModifiers
-from posthog.test.base import (
-    BaseTest,
-    _create_person,
-    _create_event,
-    flush_persons_and_events,
-)
+from posthog.test.base import BaseTest, _create_event, _create_person, flush_persons_and_events
 
 elements_chain_match = lambda x: parse_expr("match(elements_chain, {regex})", {"regex": ast.Constant(value=str(x))})
 not_call = lambda x: ast.Call(name="not", args=[x])

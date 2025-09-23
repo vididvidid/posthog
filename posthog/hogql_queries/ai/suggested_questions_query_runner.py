@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Optional
+
 from django.utils import timezone
-from ee.models.assistant import CoreMemory
 from posthog.hogql.ai import hit_openai
 from posthog.hogql_queries.ai.team_taxonomy_query_runner import TeamTaxonomyQueryRunner
 from posthog.hogql_queries.query_runner import QueryRunner
@@ -12,12 +12,12 @@ from posthog.schema import (
     TeamTaxonomyQuery,
 )
 from posthog.utils import get_instance_region
-from datetime import UTC, timedelta
+
+from ee.models.assistant import CoreMemory
 
 
 class SuggestedQuestionsQueryRunner(QueryRunner):
     query: SuggestedQuestionsQuery
-    response: SuggestedQuestionsQueryResponse
     cached_response: CachedSuggestedQuestionsQueryResponse
 
     def _calculate(self):

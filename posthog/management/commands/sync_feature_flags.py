@@ -1,7 +1,8 @@
+# ruff: noqa: T201 allow print statements
+
 from typing import cast
 
 from django.core.management.base import BaseCommand
-
 from posthog.models import FeatureFlag, Project, User
 
 # These flags won't be enabled when syncing feature flags

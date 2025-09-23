@@ -3,7 +3,6 @@ from datetime import timedelta
 from django.test import override_settings
 from django.utils import timezone
 from freezegun import freeze_time
-
 from posthog.hogql_queries.ai.event_taxonomy_query_runner import EventTaxonomyQueryRunner
 from posthog.models import Action
 from posthog.schema import CachedEventTaxonomyQueryResponse, EventTaxonomyQuery

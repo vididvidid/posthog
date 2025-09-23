@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
-from unittest.mock import ANY, patch
-
-from rest_framework import status
 
 from posthog.models import WebExperiment
 from posthog.test.base import APIBaseTest
+from rest_framework import status
+from unittest.mock import ANY, patch
 
 
 class TestWebExperiment(APIBaseTest):

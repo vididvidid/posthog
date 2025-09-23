@@ -1,7 +1,6 @@
-from rest_framework import status
-
 from posthog.models.oauth import OAuthApplication
 from posthog.test.base import APIBaseTest
+from rest_framework import status
 from rest_framework.test import APIClient
 
 

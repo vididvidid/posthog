@@ -1,11 +1,11 @@
 from posthog.hogql.database.models import (
-    StringDatabaseField,
+    FieldOrTable,
     IntegerDatabaseField,
-    Table,
     LazyJoin,
     LazyTable,
-    FieldOrTable,
     LazyTableToAdd,
+    StringDatabaseField,
+    Table,
 )
 from posthog.hogql.database.schema.persons import join_with_persons_table
 

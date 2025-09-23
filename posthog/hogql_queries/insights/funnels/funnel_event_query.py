@@ -1,4 +1,5 @@
-from typing import Union, Optional
+from typing import Optional, Union
+
 from posthog.clickhouse.materialized_columns import ColumnName
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_expr

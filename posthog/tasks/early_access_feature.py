@@ -1,12 +1,11 @@
-from celery import shared_task
 import structlog
+from celery import shared_task
 from posthog.cloud_utils import is_cloud
 from posthog.hogql import ast
 from posthog.hogql.constants import MAX_SELECT_RETURNED_ROWS, LimitContext
 from posthog.hogql.query import execute_hogql_query
 from posthog.models import EarlyAccessFeature
 from posthog.ph_client import get_client
-
 
 logger = structlog.get_logger(__name__)
 

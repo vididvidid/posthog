@@ -1,12 +1,10 @@
 import uuid
-from unittest.mock import Mock, patch
-from posthog.clickhouse.client.limit import (
-    RateLimit,
-    ConcurrencyLimitExceeded,
-)
+from collections.abc import Callable
+
+from posthog.clickhouse.client.limit import ConcurrencyLimitExceeded, RateLimit
 from posthog.constants import AvailableFeature
 from posthog.test.base import BaseTest
-from collections.abc import Callable
+from unittest.mock import Mock, patch
 
 
 class TestRateLimit(BaseTest):

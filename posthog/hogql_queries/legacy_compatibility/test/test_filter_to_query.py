@@ -1,6 +1,6 @@
 from typing import Any, cast
-import pytest
 
+import pytest
 from posthog.hogql_queries.legacy_compatibility.filter_to_query import (
     filter_to_query,
     hidden_legend_keys_to_breakdowns,
@@ -19,6 +19,7 @@ from posthog.schema import (
     CompareFilter,
     CountPerActorMathType,
     DataWarehouseNode,
+    DateRange,
     ElementPropertyFilter,
     EventPropertyFilter,
     EventsNode,
@@ -32,7 +33,6 @@ from posthog.schema import (
     FunnelVizType,
     GroupPropertyFilter,
     HogQLPropertyFilter,
-    DateRange,
     Key,
     LifecycleFilter,
     LifecycleQuery,

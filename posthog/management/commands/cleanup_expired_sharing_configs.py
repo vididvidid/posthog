@@ -1,7 +1,7 @@
+import structlog
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from posthog.models.sharing_configuration import SharingConfiguration
-import structlog
 
 logger = structlog.get_logger(__name__)
 

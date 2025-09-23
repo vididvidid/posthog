@@ -3,10 +3,8 @@ from collections import defaultdict
 
 import structlog
 from django.utils import timezone
-from prometheus_client import Counter
-
 from posthog.models.async_deletion import AsyncDeletion, DeletionType
-
+from prometheus_client import Counter
 
 logger = structlog.get_logger(__name__)
 

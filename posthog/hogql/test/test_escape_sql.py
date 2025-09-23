@@ -2,9 +2,9 @@ from datetime import datetime
 
 from posthog.hogql.errors import QueryError, ResolutionError
 from posthog.hogql.escape_sql import (
-    escape_hogql_identifier,
-    escape_clickhouse_string,
     escape_clickhouse_identifier,
+    escape_clickhouse_string,
+    escape_hogql_identifier,
     escape_hogql_string,
 )
 from posthog.models.utils import UUIDT

@@ -1,15 +1,14 @@
+import math
+import re
 from itertools import groupby
-from typing import Optional, Any
-
-from structlog import get_logger
+from typing import Any, Optional
 
 from posthog.clickhouse.client import sync_execute
 from posthog.clickhouse.client.connection import ClickHouseUser, Workload
 from posthog.clickhouse.client.execute_async import QueryStatusManager
-from posthog.utils import UUID_REGEX
 from posthog.settings import CLICKHOUSE_CLUSTER
-import re
-import math
+from posthog.utils import UUID_REGEX
+from structlog import get_logger
 
 logger = get_logger(__name__)
 

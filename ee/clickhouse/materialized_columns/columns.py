@@ -9,20 +9,18 @@ from typing import Any, Literal, TypeVar, cast
 
 from clickhouse_driver import Client
 from django.utils.timezone import now
-
 from posthog.cache_utils import cache_for
+from posthog.clickhouse.client import sync_execute
 from posthog.clickhouse.client.connection import ClickHouseUser
 from posthog.clickhouse.cluster import ClickhouseCluster, FuturesMap, HostInfo, get_cluster
 from posthog.clickhouse.kafka_engine import trim_quotes_expr
 from posthog.clickhouse.materialized_columns import ColumnName, TablesWithMaterializedColumns
-from posthog.clickhouse.client import sync_execute
 from posthog.clickhouse.query_tagging import tags_context
 from posthog.models.event.sql import EVENTS_DATA_TABLE
 from posthog.models.person.sql import PERSONS_TABLE
 from posthog.models.property import PropertyName, TableColumn, TableWithProperties
 from posthog.models.utils import generate_random_short_suffix
 from posthog.settings import CLICKHOUSE_DATABASE, TEST
-
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +132,7 @@ class MaterializedColumnDetails:
                 raise ValueError(f"unexpected comment format: {comment!r}")
 
 
+@cache_for(timedelta(minutes=15), background_refresh=True)
 def get_materialized_columns(
     table: TablesWithMaterializedColumns,
 ) -> dict[tuple[PropertyName, TableColumn], MaterializedColumn]:
@@ -143,7 +142,7 @@ def get_materialized_columns(
     }
 
 
-@cache_for(timedelta(minutes=15))
+@cache_for(timedelta(minutes=15), background_refresh=True)
 def get_enabled_materialized_columns(
     table: TablesWithMaterializedColumns,
 ) -> dict[tuple[PropertyName, TableColumn], MaterializedColumn]:

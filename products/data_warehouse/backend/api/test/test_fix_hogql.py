@@ -1,6 +1,6 @@
-from unittest import mock
 from posthog.test.base import APIBaseTest
 from products.data_warehouse.backend.hogql_fixer_ai import HogQLQueryFixerTool
+from unittest import mock
 
 
 class TestFixHogQL(APIBaseTest):

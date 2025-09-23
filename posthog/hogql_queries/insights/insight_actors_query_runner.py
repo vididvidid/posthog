@@ -1,4 +1,4 @@
-from typing import cast, Optional, Any
+from typing import Any, Optional, cast
 
 from posthog.hogql import ast
 from posthog.hogql.constants import HogQLGlobalSettings, LimitContext
@@ -11,26 +11,26 @@ from posthog.hogql_queries.insights.paths_query_runner import PathsQueryRunner
 from posthog.hogql_queries.insights.retention_query_runner import RetentionQueryRunner
 from posthog.hogql_queries.insights.stickiness_query_runner import StickinessQueryRunner
 from posthog.hogql_queries.insights.trends.trends_query_runner import TrendsQueryRunner
-from posthog.hogql_queries.query_runner import AnalyticsQueryRunner, get_query_runner, QueryRunner
+from posthog.hogql_queries.query_runner import AnalyticsQueryRunner, QueryRunner, get_query_runner
 from posthog.models import Team
 from posthog.models.filters.mixins.utils import cached_property
 from posthog.schema import (
     FunnelCorrelationActorsQuery,
     FunnelCorrelationQuery,
     FunnelsActorsQuery,
-    InsightActorsQuery,
-    HogQLQueryResponse,
-    StickinessQuery,
-    TrendsQuery,
     FunnelsQuery,
+    HogQLQueryModifiers,
+    HogQLQueryResponse,
+    InsightActorsQuery,
     LifecycleQuery,
     StickinessActorsQuery,
-    HogQLQueryModifiers,
+    StickinessQuery,
+    TrendsQuery,
 )
 from posthog.types import InsightActorsQueryNode
 
 
-class InsightActorsQueryRunner(AnalyticsQueryRunner):
+class InsightActorsQueryRunner(AnalyticsQueryRunner[HogQLQueryResponse]):
     query: InsightActorsQueryNode
 
     def __init__(

@@ -10,8 +10,8 @@ import { urls } from 'scenes/urls'
 
 import { ErrorTrackingCorrelatedIssue, ErrorTrackingIssue } from '~/queries/schema/schema-general'
 
-import { errorTrackingBulkSelectLogic } from '../errorTrackingBulkSelectLogic'
-import { errorTrackingIssueSceneLogic } from '../errorTrackingIssueSceneLogic'
+import { bulkSelectLogic } from '../logics/bulkSelectLogic'
+import { errorTrackingIssueSceneLogic } from '../scenes/ErrorTrackingIssueScene/errorTrackingIssueSceneLogic'
 import { AssigneeIconDisplay, AssigneeLabelDisplay } from './Assignee/AssigneeDisplay'
 import { AssigneeSelect } from './Assignee/AssigneeSelect'
 import { issueActionsLogic } from './IssueActions/issueActionsLogic'
@@ -20,13 +20,11 @@ import { RuntimeIcon } from './RuntimeIcon'
 
 export const IssueListTitleHeader = ({
     results,
-    columnName,
 }: {
     results: (ErrorTrackingIssue | ErrorTrackingCorrelatedIssue)[]
-    columnName: string
 }): JSX.Element => {
-    const { selectedIssueIds } = useValues(errorTrackingBulkSelectLogic)
-    const { setSelectedIssueIds } = useActions(errorTrackingBulkSelectLogic)
+    const { selectedIssueIds } = useValues(bulkSelectLogic)
+    const { setSelectedIssueIds } = useActions(bulkSelectLogic)
     const allSelected = results.length == selectedIssueIds.length && selectedIssueIds.length > 0
 
     return (
@@ -35,7 +33,7 @@ export const IssueListTitleHeader = ({
                 checked={allSelected}
                 onChange={() => (allSelected ? setSelectedIssueIds([]) : setSelectedIssueIds(results.map((r) => r.id)))}
             />
-            {columnName}
+            <span>Issue</span>
         </div>
     )
 }
@@ -45,8 +43,8 @@ export const IssueListTitleColumn = <T extends ErrorTrackingIssue | ErrorTrackin
     record: unknown
     recordIndex: number
 }): JSX.Element => {
-    const { selectedIssueIds, shiftKeyHeld, previouslyCheckedRecordIndex } = useValues(errorTrackingBulkSelectLogic)
-    const { setSelectedIssueIds, setPreviouslyCheckedRecordIndex } = useActions(errorTrackingBulkSelectLogic)
+    const { selectedIssueIds, shiftKeyHeld, previouslyCheckedRecordIndex } = useValues(bulkSelectLogic)
+    const { setSelectedIssueIds, setPreviouslyCheckedRecordIndex } = useActions(bulkSelectLogic)
     const { updateIssueAssignee, updateIssueStatus } = useActions(issueActionsLogic)
 
     const record = props.record as ErrorTrackingIssue

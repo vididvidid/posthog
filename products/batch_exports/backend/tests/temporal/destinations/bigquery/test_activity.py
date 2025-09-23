@@ -8,16 +8,12 @@ NOTE: Once all batch exports have been moved to use the internal stage, the
 """
 
 import datetime as dt
-import unittest.mock
 import uuid
 
 import pytest
+import unittest.mock
 from google.cloud import bigquery
-
-from posthog.batch_exports.service import (
-    BatchExportModel,
-    BatchExportSchema,
-)
+from posthog.batch_exports.service import BatchExportModel, BatchExportSchema
 from posthog.temporal.tests.utils.events import generate_test_events_in_clickhouse
 from posthog.temporal.tests.utils.persons import (
     generate_test_person_distinct_id2_in_clickhouse,

@@ -1,6 +1,6 @@
 import threading
 from copy import deepcopy
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from math import ceil
 from operator import itemgetter
 from typing import Any, Optional, Union
@@ -9,7 +9,6 @@ from django.conf import settings
 from django.db import models
 from django.db.models.functions import Coalesce
 from natsort import natsorted, ns
-
 from posthog.caching.insights_api import (
     BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL,
     REAL_TIME_INSIGHT_REFRESH_INTERVAL,
@@ -37,10 +36,8 @@ from posthog.hogql_queries.query_runner import AnalyticsQueryRunner
 from posthog.hogql_queries.utils.formula_ast import FormulaAST
 from posthog.hogql_queries.utils.query_compare_to_date_range import QueryCompareToDateRange
 from posthog.hogql_queries.utils.query_date_range import QueryDateRange
-from posthog.hogql_queries.utils.query_previous_period_date_range import (
-    QueryPreviousPeriodDateRange,
-)
-from posthog.hogql_queries.utils.timestamp_utils import get_earliest_timestamp_from_series, format_label_date
+from posthog.hogql_queries.utils.query_previous_period_date_range import QueryPreviousPeriodDateRange
+from posthog.hogql_queries.utils.timestamp_utils import format_label_date, get_earliest_timestamp_from_series
 from posthog.models import Team
 from posthog.models.action.action import Action
 from posthog.models.cohort.cohort import Cohort
@@ -68,19 +65,18 @@ from posthog.schema import (
     MultipleBreakdownOptions,
     MultipleBreakdownType,
     QueryTiming,
+    ResolvedDateRangeResponse,
     Series,
+    TrendsFormulaNode,
     TrendsQuery,
     TrendsQueryResponse,
-    TrendsFormulaNode,
-    ResolvedDateRangeResponse,
 )
 from posthog.utils import multisort
 from posthog.warehouse.models.util import get_view_or_table_by_name
 
 
-class TrendsQueryRunner(AnalyticsQueryRunner):
+class TrendsQueryRunner(AnalyticsQueryRunner[TrendsQueryResponse]):
     query: TrendsQuery
-    response: TrendsQueryResponse
     cached_response: CachedTrendsQueryResponse
     series: list[SeriesWithExtras]
 
@@ -139,7 +135,7 @@ class TrendsQueryRunner(AnalyticsQueryRunner):
 
         return BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL
 
-    def to_query(self) -> ast.SelectSetQuery:
+    def to_query(self) -> ast.SelectQuery | ast.SelectSetQuery:
         return ast.SelectSetQuery.create_from_queries(self.to_queries(), "UNION ALL")
 
     def to_queries(self) -> list[ast.SelectQuery | ast.SelectSetQuery]:

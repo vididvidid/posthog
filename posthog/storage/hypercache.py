@@ -1,14 +1,14 @@
 import json
-from typing import Optional
 from collections.abc import Callable
-from django.core.cache import cache
-from posthoganalytics import capture_exception
-from prometheus_client import Counter
-import structlog
+from typing import Optional
 
+import structlog
+from django.core.cache import cache
 from posthog.models.team.team import Team
 from posthog.storage import object_storage
 from posthog.storage.object_storage import ObjectStorageError
+from posthoganalytics import capture_exception
+from prometheus_client import Counter
 
 logger = structlog.get_logger(__name__)
 

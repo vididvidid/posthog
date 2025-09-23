@@ -18,9 +18,9 @@ from langgraph.checkpoint.base import (
 )
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.serde.types import TASKS, ChannelProtocol
+from posthog.sync import database_sync_to_async
 
 from ee.models.assistant import ConversationCheckpoint, ConversationCheckpointBlob, ConversationCheckpointWrite
-from posthog.sync import database_sync_to_async
 
 
 class DjangoCheckpointer(BaseCheckpointSaver[str]):

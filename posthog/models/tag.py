@@ -1,7 +1,6 @@
 from django.db import models
-
 from posthog.models.activity_logging.model_activity import ModelActivityMixin
-from posthog.models.utils import UUIDTModel, RootTeamMixin
+from posthog.models.utils import RootTeamMixin, UUIDTModel
 
 
 def tagify(tag: str):

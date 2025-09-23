@@ -1,10 +1,12 @@
+# ruff: noqa: T201 allow print statements
+# ruff: noqa: T203 allow pprint statements
+
 import os
 from pprint import pprint
 
 import posthoganalytics
 from django.conf import settings
 from django.core.management.base import BaseCommand
-
 from posthog.utils import get_helm_info_env, get_machine_id
 
 

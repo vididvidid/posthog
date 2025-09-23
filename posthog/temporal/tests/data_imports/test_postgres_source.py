@@ -12,12 +12,11 @@ import psycopg
 import pytest
 import pytest_asyncio
 from django.conf import settings
-from psycopg import AsyncConnection, AsyncCursor, sql
-from psycopg.rows import TupleRow
-
+from posthog.temporal.data_imports.sources.generated_configs import PostgresSourceConfig
 from posthog.temporal.tests.data_imports.conftest import run_external_data_job_workflow
 from posthog.warehouse.models import ExternalDataSchema, ExternalDataSource
-from posthog.temporal.data_imports.sources.generated_configs import PostgresSourceConfig
+from psycopg import AsyncConnection, AsyncCursor, sql
+from psycopg.rows import TupleRow
 
 pytestmark = pytest.mark.usefixtures("minio_client")
 

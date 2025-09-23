@@ -1,27 +1,25 @@
 from typing import Any
-from parameterized import parameterized
 
 from django.test.testcases import TestCase
-from pydantic import BaseModel
-
+from parameterized import parameterized
 from posthog.schema import (
+    BaseMathType,
+    BreakdownAttributionType,
     EventPropertyFilter,
     EventsNode,
     FunnelConversionWindowTimeUnit,
     FunnelExclusionEventsNode,
-    FunnelStepReference,
     FunnelsQuery,
+    FunnelStepReference,
     FunnelVizType,
     PersonPropertyFilter,
     PropertyOperator,
-    StepOrderValue,
-    BreakdownAttributionType,
-    TrendsQuery,
     RetentionQuery,
-    BaseMathType,
+    StepOrderValue,
+    TrendsQuery,
 )
 from posthog.schema_helpers import to_dict
-
+from pydantic import BaseModel
 
 base_trends: dict[str, Any] = {"series": []}
 base_funnel: dict[str, Any] = {"series": []}

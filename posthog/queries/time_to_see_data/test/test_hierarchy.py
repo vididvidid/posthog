@@ -1,11 +1,5 @@
 import pytest
-
-from posthog.queries.time_to_see_data.hierarchy import (
-    Node,
-    NodeType,
-    construct_hierarchy,
-    is_child,
-)
+from posthog.queries.time_to_see_data.hierarchy import Node, NodeType, construct_hierarchy, is_child
 
 
 @pytest.mark.parametrize(

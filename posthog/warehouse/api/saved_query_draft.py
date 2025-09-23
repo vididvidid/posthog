@@ -1,10 +1,7 @@
-from rest_framework import serializers
-from rest_framework import pagination
-
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.warehouse.models.datawarehouse_saved_query import DataWarehouseSavedQuery
 from posthog.warehouse.models.datawarehouse_saved_query_draft import DataWarehouseSavedQueryDraft
-from rest_framework import viewsets
+from rest_framework import pagination, serializers, viewsets
 
 
 class DataWarehouseSavedQueryDraftPagination(pagination.LimitOffsetPagination):

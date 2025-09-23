@@ -2,9 +2,9 @@ import asyncio
 import collections.abc
 
 import pyarrow as pa
-import structlog
+from posthog.temporal.common.logger import get_write_only_logger
 
-logger = structlog.get_logger()
+logger = get_write_only_logger()
 
 CONTINUATION_BYTES = b"\xff\xff\xff\xff"
 

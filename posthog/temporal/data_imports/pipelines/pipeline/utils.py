@@ -18,14 +18,9 @@ from dlt.common.data_types.typing import TDataType
 from dlt.common.libs.deltalake import ensure_delta_compatible_arrow_schema
 from dlt.common.normalizers.naming.snake_case import NamingConvention
 from dlt.sources import DltResource
-
-from posthog.temporal.common.logger import FilteringBoundLogger
 from posthog.temporal.data_imports.pipelines.pipeline.consts import PARTITION_KEY
-from posthog.temporal.data_imports.pipelines.pipeline.typings import (
-    PartitionFormat,
-    PartitionMode,
-    SourceResponse,
-)
+from posthog.temporal.data_imports.pipelines.pipeline.typings import PartitionFormat, PartitionMode, SourceResponse
+from structlog.types import FilteringBoundLogger
 
 if TYPE_CHECKING:
     from posthog.warehouse.models import ExternalDataSchema
@@ -457,10 +452,11 @@ def _convert_uuid_to_string(row: dict) -> dict:
 def _json_dumps(obj: Any) -> str:
     try:
         return orjson.dumps(obj).decode()
-    except TypeError as e:
-        if str(e) == "Integer exceeds 64-bit range":
+    except TypeError:
+        try:
             return json.dumps(obj)
-        raise TypeError(e)
+        except:
+            return str(obj)
 
 
 def table_from_iterator(data_iterator: Iterator[dict], schema: Optional[pa.Schema] = None) -> pa.Table:

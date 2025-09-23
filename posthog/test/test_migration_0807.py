@@ -1,8 +1,5 @@
 from typing import Any
 
-from posthog.test.base import NonAtomicTestMigrations
-from posthog.warehouse.models import ExternalDataSource as ExternalDataSourceModel
-from posthog.warehouse.types import ExternalDataSourceType
 from posthog.temporal.data_imports.sources.generated_configs import (
     BigQuerySourceConfig,
     MSSQLSourceConfig,
@@ -12,6 +9,9 @@ from posthog.temporal.data_imports.sources.generated_configs import (
     VitallySourceConfig,
     ZendeskSourceConfig,
 )
+from posthog.test.base import NonAtomicTestMigrations
+from posthog.warehouse.models import ExternalDataSource as ExternalDataSourceModel
+from posthog.warehouse.types import ExternalDataSourceType
 
 
 class DWHSourceRefactorMigrationTest(NonAtomicTestMigrations):

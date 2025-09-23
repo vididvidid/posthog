@@ -5,11 +5,10 @@ This module contains serializers that are used across other serializers for nest
 import copy
 from typing import Any, Optional
 
-from rest_framework import serializers
-
 from posthog.models import Organization, Team, User
 from posthog.models.organization import OrganizationMembership
 from posthog.models.project import Project
+from rest_framework import serializers
 from rest_framework.fields import SkipField
 from rest_framework.relations import PKOnlyObject
 from rest_framework.utils import model_meta

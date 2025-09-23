@@ -1,8 +1,6 @@
 from datetime import datetime
 from io import BytesIO
 from typing import Any, Optional
-from unittest import mock
-from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from boto3 import resource
@@ -12,8 +10,6 @@ from django.test import override_settings
 from django.utils.timezone import now
 from freezegun import freeze_time
 from openpyxl import load_workbook
-from requests.exceptions import HTTPError
-
 from posthog.hogql.constants import CSV_EXPORT_BREAKDOWN_LIMIT_INITIAL
 from posthog.models import ExportedAsset
 from posthog.models.utils import UUIDT
@@ -34,6 +30,9 @@ from posthog.tasks.exports.csv_exporter import (
 from posthog.test.base import APIBaseTest, _create_event, _create_person, flush_persons_and_events
 from posthog.test.test_journeys import journeys_for
 from posthog.utils import absolute_uri
+from requests.exceptions import HTTPError
+from unittest import mock
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 TEST_PREFIX = "Test-Exports"
 

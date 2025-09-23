@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from django.forms.models import model_to_dict
 from django.test import override_settings
-from freezegun import freeze_time
 from django.utils import timezone
+from freezegun import freeze_time
 from parameterized import parameterized
-
 from posthog.hogql_queries.experiments import MULTIPLE_VARIANT_KEY
 from posthog.hogql_queries.experiments.experiment_exposures_query_runner import ExperimentExposuresQueryRunner
 from posthog.hogql_queries.experiments.test.experiment_query_runner.utils import create_standard_group_test_events
@@ -21,7 +21,6 @@ from posthog.test.base import (
     snapshot_clickhouse_queries,
 )
 from posthog.test.test_journeys import journeys_for
-from django.forms.models import model_to_dict
 
 
 @override_settings(IN_UNIT_TESTING=True)

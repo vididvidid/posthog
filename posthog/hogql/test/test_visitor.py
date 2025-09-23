@@ -1,8 +1,8 @@
 from posthog.hogql import ast
-from posthog.hogql.ast import UUIDType, HogQLXTag, HogQLXAttribute
+from posthog.hogql.ast import HogQLXAttribute, HogQLXTag, UUIDType
 from posthog.hogql.errors import InternalHogQLError
 from posthog.hogql.parser import parse_expr
-from posthog.hogql.visitor import CloningVisitor, Visitor, TraversingVisitor
+from posthog.hogql.visitor import CloningVisitor, TraversingVisitor, Visitor
 from posthog.test.base import BaseTest
 
 
@@ -151,9 +151,13 @@ class TestVisitor(BaseTest):
             def visit_hogqlx_attribute(self, node: ast.Constant):
                 return "visit_hogqlx_attribute"
 
+            def visit_string_json_type(self, node: ast.Constant):
+                return "visit_string_json_type"
+
         assert NamingCheck().visit(UUIDType()) == "visit_uuid_type"
         assert NamingCheck().visit(HogQLXAttribute(name="a", value="a")) == "visit_hogqlx_attribute"
         assert NamingCheck().visit(HogQLXTag(kind="", attributes=[])) == "visit_hogqlx_tag"
+        assert NamingCheck().visit(ast.StringJSONType()) == "visit_string_json_type"
 
     def test_visit_interval_type(self):
         # Just ensure ``IntervalType`` can be visited without throwing ``NotImplementedError``

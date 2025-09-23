@@ -1,22 +1,12 @@
 import datetime as dt
 import uuid
-from unittest.mock import MagicMock, patch
 
 import pytest
-import pytest_asyncio
 from freezegun import freeze_time
-from temporalio.common import RetryPolicy
-from temporalio.testing import WorkflowEnvironment
-from temporalio.worker import UnsandboxedWorkflowRunner, Worker
-
 from posthog import constants
 from posthog.batch_exports.models import BatchExportRun
 from posthog.batch_exports.service import afetch_batch_export_runs_in_range
-from posthog.temporal.tests.utils.models import (
-    acreate_batch_export,
-    adelete_batch_export,
-    afetch_batch_export_runs,
-)
+from posthog.temporal.tests.utils.models import acreate_batch_export, adelete_batch_export, afetch_batch_export_runs
 from products.batch_exports.backend.temporal.monitoring import (
     BatchExportMonitoringInputs,
     BatchExportMonitoringWorkflow,
@@ -30,6 +20,10 @@ from products.batch_exports.backend.temporal.monitoring import (
     reconcile_event_counts,
     update_batch_export_runs,
 )
+from temporalio.common import RetryPolicy
+from temporalio.testing import WorkflowEnvironment
+from temporalio.worker import UnsandboxedWorkflowRunner, Worker
+from unittest.mock import MagicMock, patch
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.django_db]
 
@@ -38,7 +32,7 @@ GENERATE_TEST_DATA_END = NOW.replace(minute=0, second=0, microsecond=0, tzinfo=d
 GENERATE_TEST_DATA_START = GENERATE_TEST_DATA_END - dt.timedelta(hours=1)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def batch_export(ateam, temporal_client):
     """Provide a batch export for tests, not intended to be used."""
     destination_data = {
@@ -70,7 +64,7 @@ async def batch_export(ateam, temporal_client):
     await adelete_batch_export(batch_export, temporal_client)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def generate_batch_export_runs(
     generate_test_data,
     data_interval_start: dt.datetime,

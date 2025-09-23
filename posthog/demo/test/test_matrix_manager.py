@@ -1,7 +1,6 @@
 import datetime as dt
 from enum import auto
 from typing import Optional
-
 from zoneinfo import ZoneInfo
 
 from posthog.clickhouse.client import sync_execute

@@ -1,7 +1,7 @@
 from django.db import models
+from posthog.models.utils import UUIDTModel
 
 from ee.models.rbac.organization_resource_access import OrganizationResourceAccess
-from posthog.models.utils import UUIDTModel
 
 
 class Role(UUIDTModel):

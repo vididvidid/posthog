@@ -316,9 +316,7 @@ class BigQueryProjectTestStep(DestinationTestStep):
 
     async def _run_step(self) -> DestinationTestStepResult:
         """Run this test step."""
-        from products.batch_exports.backend.temporal.destinations.bigquery_batch_export import (
-            BigQueryClient,
-        )
+        from products.batch_exports.backend.temporal.destinations.bigquery_batch_export import BigQueryClient
 
         # This method should be called by `run()` which ensures this test step is configured
         # with non-`None` values.
@@ -389,10 +387,7 @@ class BigQueryDatasetTestStep(DestinationTestStep):
     async def _run_step(self) -> DestinationTestStepResult:
         """Run this test step."""
         from google.cloud.exceptions import NotFound
-
-        from products.batch_exports.backend.temporal.destinations.bigquery_batch_export import (
-            BigQueryClient,
-        )
+        from products.batch_exports.backend.temporal.destinations.bigquery_batch_export import BigQueryClient
 
         # This method should be called by `run()` which ensures this test step is configured
         # with non-`None` values.
@@ -470,10 +465,7 @@ class BigQueryTableTestStep(DestinationTestStep):
         from google.api_core.exceptions import BadRequest
         from google.cloud import bigquery
         from google.cloud.exceptions import NotFound
-
-        from products.batch_exports.backend.temporal.destinations.bigquery_batch_export import (
-            BigQueryClient,
-        )
+        from products.batch_exports.backend.temporal.destinations.bigquery_batch_export import BigQueryClient
 
         # This method should be called by `run()` which ensures this test step is configured
         # with non-`None` values.
@@ -627,11 +619,7 @@ class SnowflakeEstablishConnectionTestStep(DestinationTestStep):
     async def _run_step(self) -> DestinationTestStepResult:
         """Run this test step."""
         import snowflake.connector
-        from snowflake.connector.errors import (
-            DatabaseError,
-            InterfaceError,
-            OperationalError,
-        )
+        from snowflake.connector.errors import DatabaseError, InterfaceError, OperationalError
 
         private_key, result = try_load_private_key(self.private_key, self.private_key_passphrase)
         if result is not None:
@@ -936,14 +924,7 @@ class SnowflakeSchemaTestStep(DestinationTestStep):
 
 
 class SnowflakeDestinationTest(DestinationTest):
-    """A concrete implementation of a `DestinationTest` for Snowflake.
-
-    Attributes:
-        project_id: ID of BigQuery project we are batch exporting to.
-        dataset_id: ID of BigQuery dataset we are batch exporting to.
-        table_id: ID of BigQuery table we are batch exporting to.
-        service_account_info: Service account credentials used to access BigQuery.
-    """
+    """A concrete implementation of a `DestinationTest` for Snowflake."""
 
     def __init__(self):
         self.account = None

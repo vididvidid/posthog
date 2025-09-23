@@ -1,5 +1,5 @@
 import abc
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
 import structlog
 from boto3 import client

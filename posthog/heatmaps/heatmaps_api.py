@@ -1,7 +1,5 @@
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Any, List, Literal  # noqa: UP035
-
-from rest_framework import viewsets, request, response, serializers, status
 
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.auth import TemporaryTokenAuthentication
@@ -13,9 +11,10 @@ from posthog.hogql.context import HogQLContext
 from posthog.hogql.filters import replace_filters
 from posthog.hogql.parser import parse_expr, parse_select
 from posthog.hogql.query import execute_hogql_query
-from posthog.rate_limit import ClickHouseSustainedRateThrottle, ClickHouseBurstRateThrottle
+from posthog.rate_limit import ClickHouseBurstRateThrottle, ClickHouseSustainedRateThrottle
 from posthog.schema import DateRange, HogQLFilters, HogQLQueryResponse
 from posthog.utils import relative_date_parse_with_delta_mapping
+from rest_framework import request, response, serializers, status, viewsets
 
 DEFAULT_QUERY = """
             select pointer_target_fixed, pointer_relative_x, client_y, {aggregation_count}

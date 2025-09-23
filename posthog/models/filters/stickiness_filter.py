@@ -1,16 +1,10 @@
-from typing import TYPE_CHECKING, Any, Optional, Union
 from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from django.db.models.functions.datetime import (
-    TruncDay,
-    TruncHour,
-    TruncMonth,
-    TruncWeek,
-)
+from django.db.models.functions.datetime import TruncDay, TruncHour, TruncMonth, TruncWeek
+from posthog.constants import INSIGHT_STICKINESS
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
-
-from posthog.constants import INSIGHT_STICKINESS
 
 from .base_filter import BaseFilter
 from .mixins.common import (

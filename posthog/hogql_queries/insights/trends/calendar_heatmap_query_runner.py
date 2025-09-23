@@ -1,10 +1,9 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from math import ceil
 from typing import Any, Optional, Union
 
 from django.db import models
 from django.db.models.functions import Coalesce
-
 from posthog.caching.insights_api import (
     BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL,
     REAL_TIME_INSIGHT_REFRESH_INTERVAL,
@@ -13,8 +12,8 @@ from posthog.caching.insights_api import (
 from posthog.hogql import ast
 from posthog.hogql.constants import LimitContext
 from posthog.hogql.parser import parse_select
-from posthog.hogql.query import execute_hogql_query
 from posthog.hogql.property import action_to_expr, property_to_expr
+from posthog.hogql.query import execute_hogql_query
 from posthog.hogql.timings import HogQLTimings
 from posthog.hogql_queries.insights.trends.series_with_extras import SeriesWithExtras
 from posthog.hogql_queries.query_runner import AnalyticsQueryRunner
@@ -27,18 +26,18 @@ from posthog.schema import (
     ActionConversionGoal,
     ActionsNode,
     CachedCalendarHeatmapQueryResponse,
+    CalendarHeatmapQuery,
+    CalendarHeatmapResponse,
     CustomEventConversionGoal,
     DashboardFilter,
     DataWarehouseNode,
+    EventsHeatMapColumnAggregationResult,
+    EventsHeatMapDataResult,
+    EventsHeatMapRowAggregationResult,
+    EventsHeatMapStructuredResult,
     EventsNode,
     HogQLQueryModifiers,
     IntervalType,
-    CalendarHeatmapQuery,
-    CalendarHeatmapResponse,
-    EventsHeatMapDataResult,
-    EventsHeatMapRowAggregationResult,
-    EventsHeatMapColumnAggregationResult,
-    EventsHeatMapStructuredResult,
 )
 
 SEPARATOR = "','"
@@ -112,9 +111,8 @@ FROM (
 """
 
 
-class CalendarHeatmapQueryRunner(AnalyticsQueryRunner):
+class CalendarHeatmapQueryRunner(AnalyticsQueryRunner[CalendarHeatmapResponse]):
     query: CalendarHeatmapQuery
-    response: CalendarHeatmapResponse
     cached_response: CachedCalendarHeatmapQueryResponse
     series: list[SeriesWithExtras]
 

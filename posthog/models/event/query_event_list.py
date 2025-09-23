@@ -1,10 +1,9 @@
-from datetime import timedelta, datetime, time
+from datetime import datetime, time, timedelta
 from typing import Optional, Union
 from zoneinfo import ZoneInfo
 
 from dateutil.parser import isoparse
 from django.utils.timezone import now
-
 from posthog.api.utils import get_pk_or_uuid
 from posthog.clickhouse.client.connection import Workload
 from posthog.hogql.constants import DEFAULT_RETURNED_ROWS

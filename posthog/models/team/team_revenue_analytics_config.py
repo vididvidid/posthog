@@ -1,11 +1,13 @@
+import logging
+
+from django.core.exceptions import ValidationError
 from django.db import models
-from posthog.models.team import Team
-from posthog.models.team.team import CURRENCY_CODE_CHOICES, DEFAULT_CURRENCY
-from posthog.schema import RevenueAnalyticsEventItem, RevenueAnalyticsGoal
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.core.exceptions import ValidationError
-import logging
+from posthog.models.team import Team
+from posthog.models.team.team import CURRENCY_CODE_CHOICES, DEFAULT_CURRENCY
+from posthog.rbac.decorators import field_access_control
+from posthog.schema import RevenueAnalyticsEventItem, RevenueAnalyticsGoal
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +17,15 @@ logger = logging.getLogger(__name__)
 class TeamRevenueAnalyticsConfig(models.Model):
     team = models.OneToOneField(Team, on_delete=models.CASCADE, primary_key=True)
 
-    filter_test_accounts = models.BooleanField(default=False)
+    filter_test_accounts = field_access_control(models.BooleanField(default=False), "revenue_analytics", "editor")
     notified_first_sync = models.BooleanField(default=False, null=True)
 
     # Because we want to validate the schema for these fields, we'll have mangled DB fields/columns
     # that are then wrapped by schema-validation getters/setters
-    _events = models.JSONField(default=list, db_column="events")
-    _goals = models.JSONField(default=list, db_column="goals", null=True, blank=True)
+    _events = field_access_control(models.JSONField(default=list, db_column="events"), "revenue_analytics", "editor")
+    _goals = field_access_control(
+        models.JSONField(default=list, db_column="goals", null=True, blank=True), "revenue_analytics", "editor"
+    )
 
     # DEPRECATED: Use `team.base_currency` instead
     base_currency = models.CharField(max_length=3, choices=CURRENCY_CODE_CHOICES, default=DEFAULT_CURRENCY)

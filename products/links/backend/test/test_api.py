@@ -1,9 +1,9 @@
-from rest_framework import status
-from rest_framework.test import APIClient
+import structlog
+from posthog.models.link import Link
 from posthog.models.team.team import Team
 from posthog.test.base import APIBaseTest, ClickhouseTestMixin, QueryMatchingTest
-from posthog.models.link import Link
-import structlog
+from rest_framework import status
+from rest_framework.test import APIClient
 
 logger = structlog.get_logger(__name__)
 

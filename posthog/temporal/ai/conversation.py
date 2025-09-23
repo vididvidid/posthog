@@ -6,6 +6,9 @@ from typing import Any, Optional
 from uuid import UUID
 
 import structlog
+from posthog.models import Team, User
+from posthog.schema import HumanMessage, MaxBillingContext
+from posthog.temporal.common.base import PostHogWorkflow
 from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
 
@@ -17,9 +20,6 @@ from ee.hogai.stream.redis_stream import (
 )
 from ee.hogai.utils.types import AssistantMode
 from ee.models import Conversation
-from posthog.models import Team, User
-from posthog.schema import HumanMessage, MaxBillingContext
-from posthog.temporal.common.base import PostHogWorkflow
 
 logger = structlog.get_logger(__name__)
 
@@ -88,7 +88,7 @@ async def process_conversation_activity(inputs: AssistantConversationRunnerWorkf
 
     human_message = HumanMessage.model_validate(inputs.message) if inputs.message else None
 
-    assistant = Assistant(
+    assistant = Assistant.create(
         team,
         conversation,
         new_message=human_message,

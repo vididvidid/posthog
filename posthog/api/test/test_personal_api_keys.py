@@ -1,7 +1,6 @@
 from datetime import timedelta
 
-from rest_framework import status
-
+from posthog.api.personal_api_key import PersonalAPIKeySerializer
 from posthog.jwt import PosthogJwtAudience, encode_jwt
 from posthog.models.insight import Insight
 from posthog.models.organization import Organization
@@ -10,7 +9,7 @@ from posthog.models.team.team import Team
 from posthog.models.utils import generate_random_token_personal
 from posthog.schema import EventsQuery
 from posthog.test.base import APIBaseTest
-from posthog.api.personal_api_key import PersonalAPIKeySerializer
+from rest_framework import status
 
 
 class TestPersonalAPIKeysAPI(APIBaseTest):

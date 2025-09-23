@@ -1,39 +1,34 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from math import ceil
 from typing import Optional
 
-from posthog.caching.insights_api import (
-    BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL,
-    REDUCED_MINIMUM_INSIGHT_REFRESH_INTERVAL,
-)
-
+from posthog.caching.insights_api import BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL, REDUCED_MINIMUM_INSIGHT_REFRESH_INTERVAL
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_expr, parse_select
 from posthog.hogql.printer import to_printed_hogql
-from posthog.hogql.property import property_to_expr, action_to_expr
+from posthog.hogql.property import action_to_expr, property_to_expr
 from posthog.hogql.query import execute_hogql_query
 from posthog.hogql_queries.query_runner import AnalyticsQueryRunner
+from posthog.hogql_queries.utils.query_date_range import QueryDateRange, compare_interval_length
 from posthog.hogql_queries.utils.timestamp_utils import format_label_date
 from posthog.models import Action
-from posthog.hogql_queries.utils.query_date_range import QueryDateRange, compare_interval_length
 from posthog.models.filters.mixins.utils import cached_property
 from posthog.schema import (
-    CachedLifecycleQueryResponse,
-    LifecycleQuery,
     ActionsNode,
+    CachedLifecycleQueryResponse,
+    DayItem,
     EventsNode,
-    LifecycleQueryResponse,
     InsightActorsQueryOptionsResponse,
     IntervalType,
-    StatusItem,
-    DayItem,
+    LifecycleQuery,
+    LifecycleQueryResponse,
     ResolvedDateRangeResponse,
+    StatusItem,
 )
 
 
-class LifecycleQueryRunner(AnalyticsQueryRunner):
+class LifecycleQueryRunner(AnalyticsQueryRunner[LifecycleQueryResponse]):
     query: LifecycleQuery
-    response: LifecycleQueryResponse
     cached_response: CachedLifecycleQueryResponse
 
     def to_query(self) -> ast.SelectQuery | ast.SelectSetQuery:

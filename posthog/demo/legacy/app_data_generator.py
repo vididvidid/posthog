@@ -2,17 +2,8 @@ import random
 
 from dateutil.relativedelta import relativedelta
 from django.utils.timezone import now
-
 from posthog.constants import TREND_FILTER_TYPE_ACTIONS
-from posthog.models import (
-    Action,
-    Dashboard,
-    DashboardTile,
-    EventDefinition,
-    Insight,
-    Person,
-    PropertyDefinition,
-)
+from posthog.models import Action, Dashboard, DashboardTile, EventDefinition, Insight, Person, PropertyDefinition
 
 from .data_generator import DataGenerator
 

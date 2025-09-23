@@ -1,14 +1,13 @@
-from unittest.mock import patch
-
 from freezegun import freeze_time
+from posthog.models.feature_flag import FeatureFlag
+from posthog.test.base import APIBaseTest, ClickhouseTestMixin, _create_event
+from unittest.mock import patch
 
 from ee.tasks.auto_rollback_feature_flag import (
     calculate_rolling_average,
     check_condition,
     check_feature_flag_rollback_conditions,
 )
-from posthog.models.feature_flag import FeatureFlag
-from posthog.test.base import APIBaseTest, ClickhouseTestMixin, _create_event
 
 
 class AutoRollbackTest(ClickhouseTestMixin, APIBaseTest):

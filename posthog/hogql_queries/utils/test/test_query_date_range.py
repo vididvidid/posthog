@@ -1,8 +1,7 @@
 from datetime import timedelta
-
-from dateutil import parser
 from zoneinfo import ZoneInfo
 
+from dateutil import parser
 from posthog.hogql import ast
 from posthog.hogql_queries.utils.query_date_range import QueryDateRange, QueryDateRangeWithIntervals
 from posthog.models.team import WeekStartDay

@@ -8,23 +8,7 @@ import structlog
 import temporalio
 import temporalio.common
 from asgiref.sync import async_to_sync
-from temporalio.client import (
-    Client,
-    Schedule,
-    ScheduleActionStartWorkflow,
-    ScheduleIntervalSpec,
-    ScheduleOverlapPolicy,
-    SchedulePolicy,
-    ScheduleSpec,
-    ScheduleState,
-)
-
-from posthog.batch_exports.models import (
-    BatchExport,
-    BatchExportBackfill,
-    BatchExportDestination,
-    BatchExportRun,
-)
+from posthog.batch_exports.models import BatchExport, BatchExportBackfill, BatchExportDestination, BatchExportRun
 from posthog.clickhouse.client import sync_execute
 from posthog.constants import BATCH_EXPORTS_TASK_QUEUE, SYNC_BATCH_EXPORTS_TASK_QUEUE
 from posthog.hogql.database.database import create_hogql_database
@@ -37,6 +21,16 @@ from posthog.temporal.common.schedule import (
     pause_schedule,
     unpause_schedule,
     update_schedule,
+)
+from temporalio.client import (
+    Client,
+    Schedule,
+    ScheduleActionStartWorkflow,
+    ScheduleIntervalSpec,
+    ScheduleOverlapPolicy,
+    SchedulePolicy,
+    ScheduleSpec,
+    ScheduleState,
 )
 
 logger = structlog.get_logger(__name__)

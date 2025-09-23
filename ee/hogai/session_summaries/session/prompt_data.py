@@ -1,7 +1,6 @@
 import dataclasses
-from datetime import datetime
-
 import hashlib
+from datetime import datetime
 from typing import Any, cast
 
 from ee.hogai.session_summaries.utils import generate_full_event_id, get_column_index, prepare_datetime

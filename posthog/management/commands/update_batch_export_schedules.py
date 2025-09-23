@@ -3,7 +3,6 @@ import logging
 import structlog
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-
 from posthog.batch_exports.service import sync_batch_export
 from posthog.models import BatchExport
 

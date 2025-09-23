@@ -4,25 +4,10 @@ from collections.abc import Iterable
 from functools import cached_property
 from typing import Literal, Optional, Union, cast
 
-from pydantic import BaseModel, field_validator
-
-from ee.hogai.graph.taxonomy.tools import (
-    ask_user_for_help,
-    retrieve_action_properties,
-    retrieve_action_property_values,
-    retrieve_entity_properties,
-    retrieve_entity_property_values,
-    retrieve_event_properties,
-    retrieve_event_property_values,
-)
 from posthog.clickhouse.query_tagging import Product, tags_context
 from posthog.hogql.database.schema.channel_type import DEFAULT_CHANNEL_TYPES
-from posthog.hogql_queries.ai.actors_property_taxonomy_query_runner import (
-    ActorsPropertyTaxonomyQueryRunner,
-)
-from posthog.hogql_queries.ai.event_taxonomy_query_runner import (
-    EventTaxonomyQueryRunner,
-)
+from posthog.hogql_queries.ai.actors_property_taxonomy_query_runner import ActorsPropertyTaxonomyQueryRunner
+from posthog.hogql_queries.ai.event_taxonomy_query_runner import EventTaxonomyQueryRunner
 from posthog.hogql_queries.query_runner import ExecutionMode
 from posthog.models import Action, Team
 from posthog.models.group_type_mapping import GroupTypeMapping
@@ -34,6 +19,17 @@ from posthog.schema import (
     EventTaxonomyQuery,
 )
 from posthog.taxonomy.taxonomy import CORE_FILTER_DEFINITIONS_BY_GROUP
+from pydantic import BaseModel, field_validator
+
+from ee.hogai.graph.taxonomy.tools import (
+    ask_user_for_help,
+    retrieve_action_properties,
+    retrieve_action_property_values,
+    retrieve_entity_properties,
+    retrieve_entity_property_values,
+    retrieve_event_properties,
+    retrieve_event_property_values,
+)
 
 MaxSupportedQueryKind = Literal["trends", "funnel", "retention", "sql"]
 

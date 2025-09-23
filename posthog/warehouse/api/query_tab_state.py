@@ -1,10 +1,9 @@
-from rest_framework import serializers, viewsets
-
 from posthog.api.routing import TeamAndOrgViewSetMixin
-from posthog.warehouse.models import QueryTabState
-from rest_framework.response import Response
-from rest_framework.decorators import action
 from posthog.models.user import User
+from posthog.warehouse.models import QueryTabState
+from rest_framework import serializers, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
 class QueryTabStateSerializer(serializers.ModelSerializer):

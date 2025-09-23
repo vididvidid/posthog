@@ -11,11 +11,7 @@ from posthog.models.property import Property
 from posthog.models.team import Team
 from posthog.queries.actor_base_query import ActorBaseQuery
 from posthog.queries.trends.trends_event_query import TrendsEventQuery
-from posthog.queries.trends.util import (
-    PROPERTY_MATH_FUNCTIONS,
-    is_series_group_based,
-    process_math,
-)
+from posthog.queries.trends.util import PROPERTY_MATH_FUNCTIONS, is_series_group_based, process_math
 from posthog.schema import PersonsOnEventsMode
 
 

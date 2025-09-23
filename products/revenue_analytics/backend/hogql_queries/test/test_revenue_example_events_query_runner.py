@@ -1,15 +1,13 @@
 from decimal import Decimal
-from unittest.mock import patch
 
 from freezegun import freeze_time
-
 from posthog.models.utils import uuid7
 from posthog.schema import (
     CurrencyCode,
+    RevenueAnalyticsEventItem,
     RevenueCurrencyPropertyConfig,
     RevenueExampleEventsQuery,
     RevenueExampleEventsQueryResponse,
-    RevenueAnalyticsEventItem,
 )
 from posthog.test.base import (
     APIBaseTest,
@@ -21,6 +19,7 @@ from posthog.test.base import (
 from products.revenue_analytics.backend.hogql_queries.revenue_example_events_query_runner import (
     RevenueExampleEventsQueryRunner,
 )
+from unittest.mock import patch
 
 REVENUE_ANALYTICS_CONFIG_EVENT_PURCHASE = RevenueAnalyticsEventItem(eventName="purchase", revenueProperty="revenue")
 REVENUE_ANALYTICS_CONFIG_EVENT_PURCHASE_A = RevenueAnalyticsEventItem(

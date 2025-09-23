@@ -1,25 +1,25 @@
 from posthog.hogql.database.models import (
-    VirtualTable,
-    StringDatabaseField,
     DateTimeDatabaseField,
-    StringJSONDatabaseField,
-    StringArrayDatabaseField,
-    IntegerDatabaseField,
-    Table,
-    LazyJoin,
-    FieldTraverser,
     FieldOrTable,
+    FieldTraverser,
+    IntegerDatabaseField,
+    LazyJoin,
+    StringArrayDatabaseField,
+    StringDatabaseField,
+    StringJSONDatabaseField,
+    Table,
+    VirtualTable,
 )
 from posthog.hogql.database.schema.groups import GroupsTable, join_with_group_n_table
 from posthog.hogql.database.schema.person_distinct_ids import (
     PersonDistinctIdsTable,
     join_with_person_distinct_ids_table,
 )
-from posthog.hogql.database.schema.sessions_v1 import join_events_table_to_sessions_table, SessionsTableV1
 from posthog.hogql.database.schema.persons_revenue_analytics import (
     PersonsRevenueAnalyticsTable,
     join_with_persons_revenue_analytics_table,
 )
+from posthog.hogql.database.schema.sessions_v1 import SessionsTableV1, join_events_table_to_sessions_table
 
 
 class EventsPersonSubTable(VirtualTable):
@@ -72,6 +72,7 @@ class EventsTable(Table):
         "elements_chain": StringDatabaseField(name="elements_chain", nullable=False),
         "created_at": DateTimeDatabaseField(name="created_at", nullable=False),
         "$session_id": StringDatabaseField(name="$session_id", nullable=False),
+        "$session_id_uuid": IntegerDatabaseField(name="$session_id_uuid", nullable=False),
         "$window_id": StringDatabaseField(name="$window_id", nullable=False),
         # Lazy table that adds a join to the persons table
         "pdi": LazyJoin(

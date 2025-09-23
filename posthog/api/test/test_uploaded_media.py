@@ -7,8 +7,6 @@ from boto3 import resource
 from botocore.config import Config
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
-from rest_framework import status
-
 from posthog.models import UploadedMedia
 from posthog.models.utils import UUIDT
 from posthog.settings import (
@@ -18,6 +16,7 @@ from posthog.settings import (
     OBJECT_STORAGE_SECRET_ACCESS_KEY,
 )
 from posthog.test.base import APIBaseTest
+from rest_framework import status
 
 MEDIA_ROOT = tempfile.mkdtemp()
 

@@ -2,12 +2,11 @@ import json
 from dataclasses import dataclass
 
 import pytest
-
 from posthog.clickhouse.explain import (
+    ReadIndexUsage,
+    extract_index_usage_from_plan,
     find_all_reads,
     guestimate_index_use,
-    extract_index_usage_from_plan,
-    ReadIndexUsage,
 )
 from posthog.schema import QueryIndexUsage
 

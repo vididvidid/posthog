@@ -1,9 +1,4 @@
-from unittest.mock import patch
-
 from langchain_core.runnables import RunnableLambda
-
-from ee.hogai.graph.retention.nodes import RetentionGeneratorNode, RetentionSchemaGeneratorOutput
-from ee.hogai.utils.types import AssistantState, PartialAssistantState
 from posthog.models import Action
 from posthog.schema import (
     AssistantRetentionActionsNode,
@@ -14,6 +9,10 @@ from posthog.schema import (
     VisualizationMessage,
 )
 from posthog.test.base import BaseTest
+from unittest.mock import patch
+
+from ee.hogai.graph.retention.nodes import RetentionGeneratorNode, RetentionSchemaGeneratorOutput
+from ee.hogai.utils.types import AssistantState, PartialAssistantState
 
 
 class TestRetentionGeneratorNode(BaseTest):

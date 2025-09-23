@@ -1,9 +1,8 @@
 from django.db import models
-
-from posthog.models.team import Team
-from posthog.models.utils import UniqueConstraintByExpression, sane_repr
 from django.db.models.expressions import F
 from django.db.models.functions import Coalesce
+from posthog.models.team import Team
+from posthog.models.utils import UniqueConstraintByExpression, sane_repr
 
 
 class EventProperty(models.Model):

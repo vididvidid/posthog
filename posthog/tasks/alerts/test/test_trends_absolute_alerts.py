@@ -1,30 +1,29 @@
-from typing import Optional, Any
-from unittest.mock import ANY, MagicMock, patch
-from freezegun import freeze_time
+import datetime
+from typing import Any, Optional
 
 import dateutil
 import pytz
-import datetime
-
+from freezegun import freeze_time
+from posthog.api.test.dashboards import DashboardAPI
+from posthog.models import AlertConfiguration
 from posthog.models.alert import AlertCheck
 from posthog.models.instance_setting import set_instance_setting
-from posthog.tasks.alerts.checks import check_alert
-from posthog.test.base import APIBaseTest, _create_event, flush_persons_and_events, ClickhouseDestroyTablesMixin
-from posthog.api.test.dashboards import DashboardAPI
 from posthog.schema import (
-    ChartDisplayType,
-    EventsNode,
-    TrendsQuery,
-    TrendsFilter,
-    IntervalType,
-    DateRange,
-    BaseMathType,
-    AlertState,
     AlertCalculationInterval,
-    BreakdownFilter,
+    AlertState,
+    BaseMathType,
     Breakdown,
+    BreakdownFilter,
+    ChartDisplayType,
+    DateRange,
+    EventsNode,
+    IntervalType,
+    TrendsFilter,
+    TrendsQuery,
 )
-from posthog.models import AlertConfiguration
+from posthog.tasks.alerts.checks import check_alert
+from posthog.test.base import APIBaseTest, ClickhouseDestroyTablesMixin, _create_event, flush_persons_and_events
+from unittest.mock import ANY, MagicMock, patch
 
 # 8:55 AM
 FROZEN_TIME = dateutil.parser.parse("2024-06-02T08:55:00.000Z")

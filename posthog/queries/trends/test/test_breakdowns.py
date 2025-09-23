@@ -4,10 +4,10 @@ from typing import Optional
 from posthog.constants import TRENDS_TABLE
 from posthog.models import Filter
 from posthog.queries.trends.breakdown import (
+    BREAKDOWN_NULL_NUMERIC_LABEL,
+    BREAKDOWN_NULL_STRING_LABEL,
     BREAKDOWN_OTHER_NUMERIC_LABEL,
     BREAKDOWN_OTHER_STRING_LABEL,
-    BREAKDOWN_NULL_STRING_LABEL,
-    BREAKDOWN_NULL_NUMERIC_LABEL,
 )
 from posthog.queries.trends.trends import Trends
 from posthog.test.base import APIBaseTest, ClickhouseTestMixin, snapshot_clickhouse_queries

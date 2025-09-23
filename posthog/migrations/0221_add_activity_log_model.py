@@ -2,11 +2,10 @@
 
 import django.db.models.deletion
 import django.utils.timezone
-from django.conf import settings
-from django.db import migrations, models
-
 import posthog.models.activity_logging.activity_log
 import posthog.models.utils
+from django.conf import settings
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -35,7 +34,7 @@ class Migration(migrations.Migration):
                 (
                     "detail",
                     models.JSONField(
-                        encoder=posthog.models.activity_logging.activity_log.ActivityDetailEncoder,
+                        encoder=posthog.models.utils.ActivityDetailEncoder,
                         null=True,
                     ),
                 ),

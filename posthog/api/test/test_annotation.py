@@ -1,19 +1,13 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from unittest.mock import MagicMock, patch
-
 from zoneinfo import ZoneInfo
-from django.utils.timezone import now
-from rest_framework import status
-from parameterized import parameterized
 
+from django.utils.timezone import now
+from parameterized import parameterized
 from posthog.models import Annotation, Organization, Team, User
-from posthog.test.base import (
-    APIBaseTest,
-    QueryMatchingTest,
-    snapshot_postgres_queries_context,
-    FuzzyInt,
-)
+from posthog.test.base import APIBaseTest, FuzzyInt, QueryMatchingTest, snapshot_postgres_queries_context
+from rest_framework import status
+from unittest.mock import MagicMock, patch
 
 
 class TestAnnotation(APIBaseTest, QueryMatchingTest):
@@ -35,7 +29,7 @@ class TestAnnotation(APIBaseTest, QueryMatchingTest):
 
     @patch("posthog.api.annotation.report_user_action")
     def test_retrieving_annotation_is_not_n_plus_1(self, _mock_capture: MagicMock) -> None:
-        with self.assertNumQueries(FuzzyInt(8, 9)), snapshot_postgres_queries_context(self):
+        with self.assertNumQueries(FuzzyInt(9, 10)), snapshot_postgres_queries_context(self):
             response = self.client.get(f"/api/projects/{self.team.id}/annotations/").json()
             assert len(response["results"]) == 0
 
@@ -47,7 +41,7 @@ class TestAnnotation(APIBaseTest, QueryMatchingTest):
             content=now().isoformat(),
         )
 
-        with self.assertNumQueries(FuzzyInt(8, 9)), snapshot_postgres_queries_context(self):
+        with self.assertNumQueries(FuzzyInt(9, 10)), snapshot_postgres_queries_context(self):
             response = self.client.get(f"/api/projects/{self.team.id}/annotations/").json()
             assert len(response["results"]) == 1
 
@@ -59,7 +53,7 @@ class TestAnnotation(APIBaseTest, QueryMatchingTest):
             content=now().isoformat(),
         )
 
-        with self.assertNumQueries(FuzzyInt(8, 9)), snapshot_postgres_queries_context(self):
+        with self.assertNumQueries(FuzzyInt(9, 10)), snapshot_postgres_queries_context(self):
             response = self.client.get(f"/api/projects/{self.team.id}/annotations/").json()
             assert len(response["results"]) == 2
 

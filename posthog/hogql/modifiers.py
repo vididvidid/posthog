@@ -1,24 +1,22 @@
 from typing import TYPE_CHECKING, Optional
 
 import posthoganalytics
-from pydantic import ValidationError
-
 from posthog.cloud_utils import is_cloud
 from posthog.schema import (
+    BounceRatePageViewMode,
+    CustomChannelRule,
     HogQLQueryModifiers,
     InCohortVia,
     MaterializationMode,
     PersonsArgMaxVersion,
-    BounceRatePageViewMode,
     PropertyGroupsMode,
-    SessionTableVersion,
-    CustomChannelRule,
     SessionsV2JoinMode,
+    SessionTableVersion,
 )
+from pydantic import ValidationError
 
 if TYPE_CHECKING:
-    from posthog.models import Team
-    from posthog.models import User
+    from posthog.models import Team, User
 
 
 def create_default_modifiers_for_user(

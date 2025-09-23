@@ -1,6 +1,6 @@
 import urllib
-from typing import Any
 from collections.abc import Callable
+from typing import Any
 
 from posthog.models.entity import Entity
 from posthog.models.entity.util import get_entity_filtering_params

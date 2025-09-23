@@ -6,18 +6,6 @@ import s3fs
 import temporalio
 from asgiref.sync import async_to_sync
 from django.conf import settings
-from temporalio.client import (
-    Client as TemporalClient,
-    Schedule,
-    ScheduleActionStartWorkflow,
-    ScheduleIntervalSpec,
-    ScheduleOverlapPolicy,
-    SchedulePolicy,
-    ScheduleSpec,
-    ScheduleState,
-)
-from temporalio.common import RetryPolicy
-
 from posthog.constants import DATA_WAREHOUSE_TASK_QUEUE
 from posthog.temporal.common.client import async_connect, sync_connect
 from posthog.temporal.common.schedule import (
@@ -35,6 +23,17 @@ from posthog.temporal.common.schedule import (
     update_schedule,
 )
 from posthog.temporal.utils import ExternalDataWorkflowInputs
+from temporalio.client import (
+    Client as TemporalClient,
+    Schedule,
+    ScheduleActionStartWorkflow,
+    ScheduleIntervalSpec,
+    ScheduleOverlapPolicy,
+    SchedulePolicy,
+    ScheduleSpec,
+    ScheduleState,
+)
+from temporalio.common import RetryPolicy
 
 if TYPE_CHECKING:
     from posthog.warehouse.models import ExternalDataSource

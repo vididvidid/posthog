@@ -1,9 +1,9 @@
 import asyncio
+import dataclasses
 import datetime
+import threading
 from enum import StrEnum
 from queue import Queue
-import threading
-import dataclasses
 from typing import Any, Optional
 
 from posthog.temporal.common.client import connect

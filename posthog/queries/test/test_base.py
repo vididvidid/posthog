@@ -1,15 +1,12 @@
 import datetime
 import re
-import unittest
-from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
+import pytest
+import unittest
 from dateutil import parser, tz
 from django.test import TestCase
 from freezegun import freeze_time
-import pytest
-from rest_framework.exceptions import ValidationError
-
 from posthog.models.filters.path_filter import PathFilter
 from posthog.models.property.property import Property
 from posthog.queries.base import (
@@ -20,6 +17,8 @@ from posthog.queries.base import (
     sanitize_regex_pattern,
 )
 from posthog.test.base import APIBaseTest
+from rest_framework.exceptions import ValidationError
+from unittest.mock import patch
 
 
 class TestBase(APIBaseTest):

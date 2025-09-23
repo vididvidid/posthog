@@ -43,6 +43,7 @@
 !requirements.txt
 !rust
 !share/GeoLite2-City.mmdb
+!share/bot-ips.txt
 !staticfiles
 !tailwind.config.js
 !test-runner-jest-environment.js
@@ -62,3 +63,6 @@ rust/cyclotron-node/index.node
 rust/cyclotron-node/node_modules
 rust/docker
 rust/target
+!docker-compose.base.yml
+!docker-compose.dev.yml
+!docker

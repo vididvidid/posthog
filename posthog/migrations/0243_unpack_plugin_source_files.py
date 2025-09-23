@@ -3,7 +3,6 @@
 import structlog
 from django.core import exceptions
 from django.db import migrations
-
 from posthog.plugins.utils import extract_plugin_code
 
 logger = structlog.get_logger(__name__)

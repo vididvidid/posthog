@@ -1,4 +1,5 @@
 import json
+
 from posthog.models import ScheduledChange
 from posthog.test.base import BaseTest
 

@@ -5,8 +5,6 @@ from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from rest_framework.exceptions import ValidationError
-
 from posthog.clickhouse.query_tagging import tag_queries
 from posthog.constants import ExperimentNoResultsErrorKeys
 from posthog.hogql import ast
@@ -46,11 +44,11 @@ from posthog.schema import (
     TrendsQuery,
     TrendsQueryResponse,
 )
+from rest_framework.exceptions import ValidationError
 
 
 class ExperimentTrendsQueryRunner(QueryRunner):
     query: ExperimentTrendsQuery
-    response: ExperimentTrendsQueryResponse
     cached_response: CachedExperimentTrendsQueryResponse
 
     def __init__(self, *args, **kwargs):

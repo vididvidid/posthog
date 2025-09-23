@@ -1,6 +1,6 @@
-from unittest.mock import patch, MagicMock
-from rest_framework import status
 from posthog.test.base import APIBaseTest
+from rest_framework import status
+from unittest.mock import MagicMock, patch
 
 
 class TestExternalWebAnalyticsBreakdownEndpoint(APIBaseTest):

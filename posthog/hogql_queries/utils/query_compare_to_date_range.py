@@ -4,9 +4,7 @@ from typing import Optional
 from posthog.hogql_queries.utils.query_date_range import QueryDateRange
 from posthog.models.team import Team
 from posthog.schema import DateRange, IntervalType
-from posthog.utils import (
-    relative_date_parse,
-)
+from posthog.utils import relative_date_parse
 
 
 class QueryCompareToDateRange(QueryDateRange):

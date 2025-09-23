@@ -3,16 +3,15 @@ from typing import Optional
 
 from django.db.models import Prefetch, Q, QuerySet
 from django.dispatch import receiver
-from rest_framework import response, serializers, status, viewsets
-from rest_framework.viewsets import GenericViewSet
-
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.constants import AvailableFeature
 from posthog.models import Tag, TaggedItem, User
-from posthog.models.activity_logging.activity_log import Detail, log_activity, changes_between, ActivityContextBase
+from posthog.models.activity_logging.activity_log import ActivityContextBase, Detail, changes_between, log_activity
 from posthog.models.activity_logging.tag_utils import get_tagged_item_related_object_info
 from posthog.models.signals import model_activity_signal
 from posthog.models.tag import tagify
+from rest_framework import response, serializers, status, viewsets
+from rest_framework.viewsets import GenericViewSet
 
 
 class TaggedItemSerializerMixin(serializers.Serializer):
@@ -94,15 +93,16 @@ class TaggedItemViewSetMixin(viewsets.GenericViewSet):
         return is_licensed_for_tagged_items(self.request.user)  # type: ignore
 
     def prefetch_tagged_items_if_available(self, queryset: QuerySet) -> QuerySet:
-        if self.is_licensed():
-            return queryset.prefetch_related(
-                Prefetch(
-                    "tagged_items",
-                    queryset=TaggedItem.objects.select_related("tag"),
-                    to_attr="prefetched_tags",
-                )
+        if not self.is_licensed():
+            return queryset
+
+        return queryset.prefetch_related(
+            Prefetch(
+                "tagged_items",
+                queryset=TaggedItem.objects.select_related("tag"),
+                to_attr="prefetched_tags",
             )
-        return queryset
+        )
 
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         queryset = super().filter_queryset(queryset)

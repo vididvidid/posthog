@@ -1,7 +1,6 @@
-from rest_framework import status
-
-from posthog.models import FeatureFlag, Team, Organization
+from posthog.models import FeatureFlag, Organization, Team
 from posthog.test.base import APIBaseTest
+from rest_framework import status
 
 
 class TestFlagValueViewSet(APIBaseTest):

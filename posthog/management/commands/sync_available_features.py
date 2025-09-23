@@ -2,7 +2,6 @@ import logging
 
 import structlog
 from django.core.management.base import BaseCommand
-
 from posthog.tasks.sync_all_organization_available_product_features import (
     sync_all_organization_available_product_features,
 )

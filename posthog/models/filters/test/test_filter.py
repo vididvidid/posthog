@@ -1,11 +1,10 @@
 import datetime
 import json
-from typing import Any, Optional, cast
 from collections.abc import Callable
+from typing import Any, Optional, cast
 
-from django.db.models import Q, Func, F, CharField
+from django.db.models import CharField, F, Func, Q
 from freezegun import freeze_time
-
 from posthog.constants import FILTER_TEST_ACCOUNTS
 from posthog.models import Cohort, Filter, Person, Team
 from posthog.models.property import Property

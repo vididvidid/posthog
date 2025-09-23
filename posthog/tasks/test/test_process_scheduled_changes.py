@@ -1,10 +1,11 @@
 import json
-from datetime import datetime, timedelta, UTC
-from posthog.models import ScheduledChange, FeatureFlag
-from posthog.models.activity_logging.activity_log import ActivityLog
-from posthog.test.base import APIBaseTest, QueryMatchingTest, snapshot_postgres_queries
-from posthog.tasks.process_scheduled_changes import process_scheduled_changes
+from datetime import UTC, datetime, timedelta
+
 from freezegun import freeze_time
+from posthog.models import FeatureFlag, ScheduledChange
+from posthog.models.activity_logging.activity_log import ActivityLog
+from posthog.tasks.process_scheduled_changes import process_scheduled_changes
+from posthog.test.base import APIBaseTest, QueryMatchingTest, snapshot_postgres_queries
 
 
 class TestProcessScheduledChanges(APIBaseTest, QueryMatchingTest):

@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from freezegun import freeze_time
-
 from posthog.models.exported_asset import ExportedAsset
 from posthog.test.base import APIBaseTest
 

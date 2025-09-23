@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
+from posthog.hogql.constants import LimitContext
 from posthog.hogql.timings import HogQLTimings
 from posthog.schema import HogQLNotice, HogQLQueryModifiers
-from posthog.hogql.constants import LimitContext
 
 if TYPE_CHECKING:
     from posthog.hogql.database.database import Database

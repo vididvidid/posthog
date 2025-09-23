@@ -7,7 +7,6 @@ from .product import build as product_builder
 from .revenue_item import build as revenue_item_builder
 from .subscription import build as subscription_builder
 
-
 BUILDER: Builder = {
     DatabaseSchemaManagedViewTableKind.REVENUE_ANALYTICS_CHARGE: charge_builder,
     DatabaseSchemaManagedViewTableKind.REVENUE_ANALYTICS_SUBSCRIPTION: subscription_builder,

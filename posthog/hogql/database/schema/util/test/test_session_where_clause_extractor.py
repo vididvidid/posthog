@@ -1,16 +1,15 @@
-from typing import Union, Optional
+from typing import Optional, Union
 
 from inline_snapshot import snapshot
-
 from posthog.hogql import ast
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.database.schema.util.where_clause_extractor import SessionMinTimestampWhereClauseExtractorV1
 from posthog.hogql.modifiers import create_default_modifiers_for_team
-from posthog.hogql.parser import parse_select, parse_expr
+from posthog.hogql.parser import parse_expr, parse_select
 from posthog.hogql.printer import prepare_ast_for_printing, print_prepared_ast
 from posthog.hogql.visitor import clone_expr
 from posthog.schema import SessionTableVersion
-from posthog.test.base import ClickhouseTestMixin, APIBaseTest
+from posthog.test.base import APIBaseTest, ClickhouseTestMixin
 
 
 def f(s: Union[str, ast.Expr, None], placeholders: Optional[dict[str, ast.Expr]] = None) -> Union[ast.Expr, None]:
@@ -349,7 +348,7 @@ FROM
         sessions.session_id,
         sessions.session_id) AS sessions
 WHERE
-    ifNull(greater(sessions.`$start_timestamp`, %(hogql_val_3)s), 0)
+    greater(sessions.`$start_timestamp`, %(hogql_val_3)s)
 LIMIT 50000\
 """
         )
@@ -487,7 +486,7 @@ FROM
     GROUP BY
         person_distinct_id_overrides.distinct_id
     HAVING
-        ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0)
+        equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0)
     SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
     LEFT JOIN (SELECT
         dateDiff(%(hogql_val_0)s, min(toTimeZone(sessions.min_timestamp, %(hogql_val_1)s)), max(toTimeZone(sessions.max_timestamp, %(hogql_val_2)s))) AS `$session_duration`,

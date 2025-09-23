@@ -1,16 +1,10 @@
-from datetime import timedelta, datetime
-
-from posthog.hogql.constants import HogQLGlobalSettings, MAX_BYTES_BEFORE_EXTERNAL_GROUP_BY
+from datetime import datetime, timedelta
 from math import ceil
-from typing import Optional, Any
+from typing import Any, Optional
 
-from posthog.caching.insights_api import (
-    BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL,
-    REDUCED_MINIMUM_INSIGHT_REFRESH_INTERVAL,
-)
-
+from posthog.caching.insights_api import BASE_MINIMUM_INSIGHT_REFRESH_INTERVAL, REDUCED_MINIMUM_INSIGHT_REFRESH_INTERVAL
 from posthog.hogql import ast
-from posthog.hogql.constants import LimitContext
+from posthog.hogql.constants import MAX_BYTES_BEFORE_EXTERNAL_GROUP_BY, HogQLGlobalSettings, LimitContext
 from posthog.hogql.printer import to_printed_hogql
 from posthog.hogql.query import execute_hogql_query
 from posthog.hogql.timings import HogQLTimings
@@ -26,17 +20,16 @@ from posthog.models import Team
 from posthog.models.filters.mixins.utils import cached_property
 from posthog.schema import (
     CachedFunnelsQueryResponse,
-    FunnelVizType,
     FunnelsQuery,
     FunnelsQueryResponse,
+    FunnelVizType,
     HogQLQueryModifiers,
     ResolvedDateRangeResponse,
 )
 
 
-class FunnelsQueryRunner(AnalyticsQueryRunner):
+class FunnelsQueryRunner(AnalyticsQueryRunner[FunnelsQueryResponse]):
     query: FunnelsQuery
-    response: FunnelsQueryResponse
     cached_response: CachedFunnelsQueryResponse
     context: FunnelQueryContext
 

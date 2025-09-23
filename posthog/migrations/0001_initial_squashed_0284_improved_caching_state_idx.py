@@ -10,10 +10,6 @@ import django.core.validators
 import django.db.models.deletion
 import django.db.models.expressions
 import django.utils.timezone
-from django.conf import settings
-from django.contrib.postgres.operations import TrigramExtension
-from django.db import migrations, models
-
 import posthog.models.activity_logging.activity_log
 import posthog.models.exported_asset
 import posthog.models.organization_domain
@@ -22,6 +18,9 @@ import posthog.models.team.team
 import posthog.models.user
 import posthog.models.utils
 import posthog.utils
+from django.conf import settings
+from django.contrib.postgres.operations import TrigramExtension
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -532,7 +531,7 @@ class Migration(migrations.Migration):
                 (
                     "detail",
                     models.JSONField(
-                        encoder=posthog.models.activity_logging.activity_log.ActivityDetailEncoder,
+                        encoder=posthog.models.utils.ActivityDetailEncoder,
                         null=True,
                     ),
                 ),

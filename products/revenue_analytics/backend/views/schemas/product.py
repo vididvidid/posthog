@@ -1,7 +1,7 @@
 from posthog.hogql.database.models import StringDatabaseField
 from posthog.schema import DatabaseSchemaManagedViewTableKind
-from ._definitions import Schema, FieldsDict
 
+from ._definitions import FieldsDict, Schema
 
 FIELDS: FieldsDict = {
     "id": StringDatabaseField(name="id"),

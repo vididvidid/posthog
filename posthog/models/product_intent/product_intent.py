@@ -3,19 +3,18 @@ from typing import Optional
 
 from celery import shared_task
 from django.db import models
-from rest_framework import serializers
-
 from posthog.models.dashboard import Dashboard
 from posthog.models.error_tracking import ErrorTrackingIssue
 from posthog.models.experiment import Experiment
 from posthog.models.feature_flag.feature_flag import FeatureFlag
-from posthog.models.surveys.survey import Survey
 from posthog.models.insight import Insight
+from posthog.models.surveys.survey import Survey
 from posthog.models.team.team import Team
 from posthog.models.user import User
-from posthog.models.utils import UUIDTModel, RootTeamMixin
+from posthog.models.utils import RootTeamMixin, UUIDTModel
 from posthog.session_recordings.models.session_recording_event import SessionRecordingViewed
 from posthog.utils import get_instance_realm
+from rest_framework import serializers
 
 """
 How to use this model:

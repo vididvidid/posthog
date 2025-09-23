@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from django.utils import timezone
-
 from posthog.hogql_queries.ai.utils import TaxonomyCacheMixin
 from posthog.test.base import BaseTest
 

@@ -2,7 +2,6 @@ from typing import Any
 
 import pytest
 from django.test import override_settings
-
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.parser import parse_select
 from posthog.hogql.printer import print_ast

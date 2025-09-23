@@ -1,19 +1,13 @@
-from html import escape
 import json
 from datetime import datetime
-from unittest.mock import patch
+from html import escape
 
 from django.test import TestCase
-from freezegun import freeze_time
 from django.test.client import RequestFactory
-
-from posthog.api.csp import (
-    process_csp_report,
-    parse_report_uri,
-    parse_report_to,
-    sample_csp_report,
-)
+from freezegun import freeze_time
+from posthog.api.csp import parse_report_to, parse_report_uri, process_csp_report, sample_csp_report
 from posthog.sampling import sample_on_property
+from unittest.mock import patch
 
 
 class TestCSPModule(TestCase):

@@ -1,11 +1,10 @@
-from unittest.mock import call, patch, ANY
-
-from rest_framework import status
 from datetime import timedelta
 
 from posthog.models.organization import Organization, OrganizationMembership
 from posthog.models.user import User
 from posthog.test.base import APIBaseTest, QueryMatchingTest
+from rest_framework import status
+from unittest.mock import ANY, call, patch
 
 
 class TestOrganizationMembersAPI(APIBaseTest, QueryMatchingTest):
@@ -101,8 +100,8 @@ class TestOrganizationMembersAPI(APIBaseTest, QueryMatchingTest):
         self.assertEqual(response_data["keys"], [])
 
         # Create a personal API key with scoped organizations
-        from posthog.models.personal_api_key import PersonalAPIKey
         from django.utils import timezone
+        from posthog.models.personal_api_key import PersonalAPIKey
         from posthog.models.team.team import Team
 
         # Create a key that hasn't been used recently - scoped to organization

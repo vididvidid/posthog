@@ -1,7 +1,7 @@
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
-import uuid
 
 import structlog
 from posthog.kafka_client.client import KafkaProducer

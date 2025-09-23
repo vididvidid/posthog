@@ -4,21 +4,20 @@ from typing import Any, Literal, Optional, cast
 
 import pytest
 from django.test import override_settings
-from unittest.mock import patch
-
+from parameterized import parameterized
 from posthog.clickhouse.client.execute import sync_execute
 from posthog.hogql import ast
-from posthog.hogql.constants import MAX_SELECT_RETURNED_ROWS, HogQLQuerySettings, HogQLGlobalSettings
+from posthog.hogql.constants import MAX_SELECT_RETURNED_ROWS, HogQLGlobalSettings, HogQLQuerySettings
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.database.database import Database
 from posthog.hogql.database.models import DateDatabaseField, StringDatabaseField
 from posthog.hogql.errors import ExposedHogQLError, QueryError
-from posthog.hogql.parser import parse_select, parse_expr
-from posthog.hogql.printer import print_ast, to_printed_hogql, prepare_ast_for_printing, print_prepared_ast
+from posthog.hogql.parser import parse_expr, parse_select
+from posthog.hogql.printer import prepare_ast_for_printing, print_ast, print_prepared_ast, to_printed_hogql
+from posthog.hogql.query import execute_hogql_query
 from posthog.models import PropertyDefinition
 from posthog.models.cohort.cohort import Cohort
 from posthog.models.exchange_rate.sql import EXCHANGE_RATE_DICTIONARY_NAME
-from posthog.settings.data_stores import CLICKHOUSE_DATABASE
 from posthog.models.team.team import WeekStartDay
 from posthog.schema import (
     HogQLQueryModifiers,
@@ -27,8 +26,11 @@ from posthog.schema import (
     PersonsOnEventsMode,
     PropertyGroupsMode,
 )
-from posthog.test.base import BaseTest, _create_event, materialized, APIBaseTest
-from posthog.hogql.query import execute_hogql_query
+from posthog.settings.data_stores import CLICKHOUSE_DATABASE
+from posthog.test.base import APIBaseTest, BaseTest, _create_event, clean_varying_query_parts, materialized
+from posthog.warehouse.models import DataWarehouseCredential, DataWarehouseTable
+from unittest import mock
+from unittest.mock import patch
 
 
 class TestPrinter(BaseTest):
@@ -1281,14 +1283,14 @@ class TestPrinter(BaseTest):
                 "argMax(person_distinct_id_overrides.person_id, person_distinct_id_overrides.version) AS person_id, "
                 "person_distinct_id_overrides.distinct_id AS distinct_id FROM person_distinct_id_overrides WHERE "
                 f"equals(person_distinct_id_overrides.team_id, {self.team.pk}) GROUP BY person_distinct_id_overrides.distinct_id "
-                "HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) "
+                "HAVING equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0) "
                 "SETTINGS optimize_aggregation_in_order=1) AS events__override ON equals(events.distinct_id, events__override.distinct_id) "
                 f"JOIN (SELECT person.id AS id FROM person WHERE and(equals(person.team_id, {self.team.pk}), "
                 "in(tuple(person.id, person.version), (SELECT person.id AS id, max(person.version) AS version "
                 f"FROM person WHERE equals(person.team_id, {self.team.pk}) GROUP BY person.id "
-                "HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), "
-                "ifNull(less(argMax(toTimeZone(person.created_at, %(hogql_val_0)s), person.version), "
-                "plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))), 0))))) "
+                "HAVING and(equals(argMax(person.is_deleted, person.version), 0), "
+                "less(argMax(toTimeZone(person.created_at, %(hogql_val_0)s), person.version), "
+                "plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))))))) "
                 "SETTINGS optimize_aggregation_in_order=1) AS persons ON equals(persons.id, if(not(empty(events__override.distinct_id)), "
                 f"events__override.person_id, events.person_id)) WHERE equals(events.team_id, {self.team.pk}) LIMIT {MAX_SELECT_RETURNED_ROWS}",
             )
@@ -1307,14 +1309,14 @@ class TestPrinter(BaseTest):
                 "argMax(person_distinct_id_overrides.person_id, person_distinct_id_overrides.version) AS person_id, "
                 "person_distinct_id_overrides.distinct_id AS distinct_id FROM person_distinct_id_overrides WHERE "
                 f"equals(person_distinct_id_overrides.team_id, {self.team.pk}) GROUP BY person_distinct_id_overrides.distinct_id "
-                "HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) "
+                "HAVING equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0) "
                 "SETTINGS optimize_aggregation_in_order=1) AS events__override ON equals(events.distinct_id, events__override.distinct_id) "
                 f"JOIN (SELECT person.id AS id FROM person WHERE and(equals(person.team_id, {self.team.pk}), "
                 "in(tuple(person.id, person.version), (SELECT person.id AS id, max(person.version) AS version "
                 f"FROM person WHERE equals(person.team_id, {self.team.pk}) GROUP BY person.id "
-                "HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), "
-                "ifNull(less(argMax(toTimeZone(person.created_at, %(hogql_val_0)s), person.version), "
-                "plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))), 0))))) "
+                "HAVING and(equals(argMax(person.is_deleted, person.version), 0), "
+                "less(argMax(toTimeZone(person.created_at, %(hogql_val_0)s), person.version), "
+                "plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))))))) "
                 "SETTINGS optimize_aggregation_in_order=1) AS persons SAMPLE 0.1 ON equals(persons.id, if(not(empty(events__override.distinct_id)), "
                 f"events__override.person_id, events.person_id)) WHERE equals(events.team_id, {self.team.pk}) LIMIT {MAX_SELECT_RETURNED_ROWS}",
             )
@@ -1325,18 +1327,18 @@ class TestPrinter(BaseTest):
                 enable_select_queries=True,
                 modifiers=HogQLQueryModifiers(personsArgMaxVersion=PersonsArgMaxVersion.V2),
             )
-            expected = self._select(
+            got = self._select(
                 "SELECT events.event FROM events SAMPLE 2/78 OFFSET 999 JOIN persons ON persons.id=events.person_id",
                 context,
             )
             self.assertEqual(
-                expected,
                 f"SELECT events.event AS event FROM events SAMPLE 2/78 OFFSET 999 JOIN (SELECT person.id AS id FROM person WHERE "
                 f"and(equals(person.team_id, {self.team.pk}), in(tuple(person.id, person.version), (SELECT person.id AS id, "
                 f"max(person.version) AS version FROM person WHERE equals(person.team_id, {self.team.pk}) GROUP BY person.id "
-                f"HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, "
-                f"%(hogql_val_0)s), person.version), plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))), 0))))) SETTINGS optimize_aggregation_in_order=1) "
+                f"HAVING and(equals(argMax(person.is_deleted, person.version), 0), less(argMax(toTimeZone(person.created_at, "
+                f"%(hogql_val_0)s), person.version), plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))))))) SETTINGS optimize_aggregation_in_order=1) "
                 f"AS persons ON equals(persons.id, events.person_id) WHERE equals(events.team_id, {self.team.pk}) LIMIT {MAX_SELECT_RETURNED_ROWS}",
+                got,
             )
 
             context = HogQLContext(
@@ -1344,18 +1346,18 @@ class TestPrinter(BaseTest):
                 enable_select_queries=True,
                 modifiers=HogQLQueryModifiers(personsArgMaxVersion=PersonsArgMaxVersion.V2),
             )
-            expected = self._select(
+            got = self._select(
                 "SELECT events.event FROM events SAMPLE 2/78 OFFSET 999 JOIN persons SAMPLE 0.1 ON persons.id=events.person_id",
                 context,
             )
             self.assertEqual(
-                expected,
                 f"SELECT events.event AS event FROM events SAMPLE 2/78 OFFSET 999 JOIN (SELECT person.id AS id FROM person WHERE "
                 f"and(equals(person.team_id, {self.team.pk}), in(tuple(person.id, person.version), (SELECT person.id AS id, "
                 f"max(person.version) AS version FROM person WHERE equals(person.team_id, {self.team.pk}) GROUP BY person.id "
-                f"HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, "
-                f"%(hogql_val_0)s), person.version), plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))), 0))))) SETTINGS optimize_aggregation_in_order=1) "
+                f"HAVING and(equals(argMax(person.is_deleted, person.version), 0), less(argMax(toTimeZone(person.created_at, "
+                f"%(hogql_val_0)s), person.version), plus(now64(6, %(hogql_val_1)s), toIntervalDay(1))))))) SETTINGS optimize_aggregation_in_order=1) "
                 f"AS persons SAMPLE 0.1 ON equals(persons.id, events.person_id) WHERE equals(events.team_id, {self.team.pk}) LIMIT {MAX_SELECT_RETURNED_ROWS}",
+                got,
             )
 
     def test_count_distinct(self):
@@ -1492,6 +1494,14 @@ class TestPrinter(BaseTest):
             f"SELECT events.distinct_id AS distinct_id, lagInFrame(toNullable(toTimeZone(events.timestamp, %(hogql_val_0)s))) OVER (PARTITION BY events.distinct_id ORDER BY toTimeZone(events.timestamp, %(hogql_val_1)s) ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM events WHERE equals(events.team_id, {self.team.pk}) LIMIT 50000",
         )
 
+        # No rows but order by exists
+        self.assertEqual(
+            self._select(
+                "SELECT distinct_id, lag(event) OVER (PARTITION BY distinct_id ORDER BY timestamp) FROM events"
+            ),
+            f"SELECT events.distinct_id AS distinct_id, lagInFrame(toNullable(events.event)) OVER (PARTITION BY events.distinct_id ORDER BY toTimeZone(events.timestamp, %(hogql_val_0)s) ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM events WHERE equals(events.team_id, {self.team.pk}) LIMIT 50000",
+        )
+
     def test_window_functions_with_window(self):
         self.assertEqual(
             self._select(
@@ -1593,16 +1603,15 @@ class TestPrinter(BaseTest):
             f"SELECT "
             # start_time = toStartOfMonth(now())
             # (the return of toStartOfMonth() is treated as "potentially nullable" since we yet have full typing support)
-            f"ifNull(equals(session_replay_events.start_time, toStartOfMonth(now64(6, %(hogql_val_1)s))), "
-            f"isNull(session_replay_events.start_time) and isNull(toStartOfMonth(now64(6, %(hogql_val_1)s)))) AS a, "
+            f"equals(session_replay_events.start_time, toStartOfMonth(now64(6, %(hogql_val_1)s))) AS a, "
             # 1 = 1
             f"1 AS b, "
             # click_count = 1
-            f"ifNull(equals(session_replay_events.click_count, 1), 0) AS c, "
+            f"equals(session_replay_events.click_count, 1) AS c, "
             # 1 = click_count
-            f"ifNull(equals(1, session_replay_events.click_count), 0) AS d, "
+            f"equals(1, session_replay_events.click_count) AS d, "
             # click_count = keypress_count
-            f"ifNull(equals(session_replay_events.click_count, session_replay_events.keypress_count), isNull(session_replay_events.click_count) and isNull(session_replay_events.keypress_count)) AS e, "
+            f"equals(session_replay_events.click_count, session_replay_events.keypress_count) AS e, "
             # click_count = null
             f"isNull(session_replay_events.click_count) AS f, "
             # null = click_count
@@ -1627,16 +1636,15 @@ class TestPrinter(BaseTest):
             f"SELECT "
             # start_time = toStartOfMonth(now())
             # (the return of toStartOfMonth() is treated as "potentially nullable" since we yet have full typing support)
-            f"ifNull(notEquals(session_replay_events.start_time, toStartOfMonth(now64(6, %(hogql_val_1)s))), "
-            f"isNotNull(session_replay_events.start_time) or isNotNull(toStartOfMonth(now64(6, %(hogql_val_1)s)))) AS a, "
+            f"notEquals(session_replay_events.start_time, toStartOfMonth(now64(6, %(hogql_val_1)s))) AS a, "
             # 1 = 1
             f"0 AS b, "
             # click_count = 1
-            f"ifNull(notEquals(session_replay_events.click_count, 1), 1) AS c, "
+            f"notEquals(session_replay_events.click_count, 1) AS c, "
             # 1 = click_count
-            f"ifNull(notEquals(1, session_replay_events.click_count), 1) AS d, "
+            f"notEquals(1, session_replay_events.click_count) AS d, "
             # click_count = keypress_count
-            f"ifNull(notEquals(session_replay_events.click_count, session_replay_events.keypress_count), isNotNull(session_replay_events.click_count) or isNotNull(session_replay_events.keypress_count)) AS e, "
+            f"notEquals(session_replay_events.click_count, session_replay_events.keypress_count) AS e, "
             # click_count = null
             f"isNotNull(session_replay_events.click_count) AS f, "
             # null = click_count
@@ -1680,6 +1688,69 @@ class TestPrinter(BaseTest):
             "hogql_val_4": ["true", "false"],
             "hogql_val_5": [1, 0],
         }
+
+    @patch("posthog.hogql.printer.get_materialized_column_for_property")
+    def test_ai_trace_id_optimizations(self, mock_get_mat_col):
+        """Test that $ai_trace_id gets special treatment for bloom filter index optimization"""
+
+        from ee.clickhouse.materialized_columns.columns import MaterializedColumn, MaterializedColumnDetails
+
+        mock_mat_col = MaterializedColumn(
+            name="mat_$ai_trace_id",
+            details=MaterializedColumnDetails(
+                table_column="properties", property_name="$ai_trace_id", is_disabled=False
+            ),
+            is_nullable=True,
+        )
+
+        # Basic equality comparison - no ifNull wrapping
+        mock_get_mat_col.return_value = mock_mat_col
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+
+        sql = self._select("SELECT * FROM events WHERE properties.$ai_trace_id = 'trace123'", context)
+
+        # Should generate: equals(mat_$ai_trace_id, 'trace123') without ifNull wrapper
+        # Check that the WHERE clause contains the direct equals check for $ai_trace_id
+        self.assertIn("equals(events.`mat_$ai_trace_id`, %(hogql_val_4)s)", sql)
+        # Verify the equals for $ai_trace_id is NOT wrapped in ifNull (it appears directly in WHERE clause)
+        self.assertIn("WHERE and(equals(events.team_id,", sql)
+        self.assertIn("equals(events.`mat_$ai_trace_id`, %(hogql_val_4)s))", sql)
+
+        # Verify the placeholder value (it's hogql_val_4 due to other parameters in the query)
+        self.assertEqual(context.values["hogql_val_4"], "trace123")
+
+        # With materialized column - no nullIf wrapping
+        context = HogQLContext(team_id=self.team.pk)
+        sql = self._expr("properties.$ai_trace_id", context)
+
+        # Should be: events.mat_$ai_trace_id
+        # NOT: nullIf(nullIf(events.mat_$ai_trace_id, ''), 'null')
+        self.assertEqual(sql.strip(), "events.`mat_$ai_trace_id`")
+        self.assertNotIn("nullIf", sql)
+
+        # IN operations - no ifNull wrapping
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+        sql = self._select("SELECT * FROM events WHERE properties.$ai_trace_id IN ('trace1', 'trace2')", context)
+
+        # Should generate clean IN without ifNull wrapper
+        self.assertIn("in(events.`mat_$ai_trace_id`, tuple(%(hogql_val_4)s, %(hogql_val_5)s))", sql)
+        self.assertNotIn("ifNull(in", sql)
+
+        # Verify the placeholder values
+        self.assertEqual(context.values["hogql_val_4"], "trace1")
+        self.assertEqual(context.values["hogql_val_5"], "trace2")
+
+        # Verify other properties still get normal treatment
+        mock_get_mat_col.return_value = None  # No materialized column for other props
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+
+        sql = self._select("SELECT * FROM events WHERE properties.other_prop = 'value'", context)
+
+        # Other properties should still have null handling with ifNull wrapping
+        self.assertIn(
+            "ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(events.properties, %(hogql_val_7)s), ''), 'null'), '^\"|\"$', ''), %(hogql_val_8)s), 0)",
+            sql,
+        )
 
     def test_field_nullable_like(self):
         context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, database=Database())
@@ -2490,6 +2561,171 @@ class TestPrinter(BaseTest):
                 HogQLContext(team_id=self.team.pk, enable_select_queries=True),
                 dialect="clickhouse",
             )
+
+    def test_team_id_guarding_events(self):
+        sql = self._select(
+            "SELECT event FROM events",
+        )
+        assert (
+            sql == f"SELECT events.event AS event FROM events WHERE equals(events.team_id, {self.team.pk}) LIMIT 50000"
+        )
+
+    @parameterized.expand([[True], [False]])
+    @pytest.mark.usefixtures("unittest_snapshot")
+    def test_s3_tables_global_join_with_cte(self, using_global_joins):
+        with mock.patch("posthog.hogql.resolver.USE_GLOBAL_JOINS", using_global_joins):
+            credential = DataWarehouseCredential.objects.create(
+                team=self.team, access_key="key", access_secret="secret"
+            )
+            DataWarehouseTable.objects.create(
+                team=self.team,
+                name="test_table",
+                format=DataWarehouseTable.TableFormat.DeltaS3Wrapper,
+                url_pattern="http://s3/folder/",
+                credential=credential,
+                columns={"id": {"hogql": "StringDatabaseField", "clickhouse": "String", "schema_valid": True}},
+            )
+            printed = self._select("""
+                WITH some_remote_table AS
+                (
+                    SELECT * FROM test_table
+                )
+                SELECT event FROM events
+                JOIN some_remote_table ON events.event = toString(some_remote_table.id)""")
+
+            if using_global_joins:
+                assert "GLOBAL JOIN" in printed
+            else:
+                assert "GLOBAL JOIN" not in printed
+
+            assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
+
+    @parameterized.expand([[True], [False]])
+    @pytest.mark.usefixtures("unittest_snapshot")
+    def test_s3_tables_global_join_with_cte_nested(self, using_global_joins):
+        with mock.patch("posthog.hogql.resolver.USE_GLOBAL_JOINS", using_global_joins):
+            credential = DataWarehouseCredential.objects.create(
+                team=self.team, access_key="key", access_secret="secret"
+            )
+            DataWarehouseTable.objects.create(
+                team=self.team,
+                name="test_table",
+                format=DataWarehouseTable.TableFormat.DeltaS3Wrapper,
+                url_pattern="http://s3/folder/",
+                credential=credential,
+                columns={"id": {"hogql": "StringDatabaseField", "clickhouse": "String", "schema_valid": True}},
+            )
+            printed = self._select("""
+                WITH some_remote_table AS
+                (
+                    SELECT e.event, t.id FROM events e
+                    JOIN test_table t on toString(t.id) = e.event
+                )
+                SELECT some_remote_table.event FROM events
+                JOIN some_remote_table ON events.event = toString(some_remote_table.id)""")
+
+            if using_global_joins:
+                assert "GLOBAL JOIN" in printed
+            else:
+                assert "GLOBAL JOIN" not in printed
+
+            assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
+
+    @parameterized.expand([[True], [False]])
+    @pytest.mark.usefixtures("unittest_snapshot")
+    def test_s3_tables_global_join_with_multiple_joins(self, using_global_joins):
+        with mock.patch("posthog.hogql.resolver.USE_GLOBAL_JOINS", using_global_joins):
+            credential = DataWarehouseCredential.objects.create(
+                team=self.team, access_key="key", access_secret="secret"
+            )
+            DataWarehouseTable.objects.create(
+                team=self.team,
+                name="test_table",
+                format=DataWarehouseTable.TableFormat.DeltaS3Wrapper,
+                url_pattern="http://s3/folder/",
+                credential=credential,
+                columns={"id": {"hogql": "StringDatabaseField", "clickhouse": "String", "schema_valid": True}},
+            )
+            printed = self._select("""
+                SELECT e.event, s.event, t.id
+                FROM events e
+                JOIN (SELECT event from events) as s ON e.event = s.event
+                LEFT JOIN test_table t on e.event = toString(t.id)""")
+
+            if using_global_joins:
+                assert "GLOBAL JOIN" in printed  # Join #1
+                assert "GLOBAL LEFT JOIN" in printed  # Join #2
+            else:
+                assert "GLOBAL JOIN" not in printed  # Join #1
+                assert "GLOBAL LEFT JOIN" not in printed  # Join #2
+
+            assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
+
+    @parameterized.expand([[True], [False]])
+    @pytest.mark.usefixtures("unittest_snapshot")
+    def test_s3_tables_global_join_with_in_and_property_type(self, using_global_joins):
+        with mock.patch("posthog.hogql.resolver.USE_GLOBAL_JOINS", using_global_joins):
+            credential = DataWarehouseCredential.objects.create(
+                team=self.team, access_key="key", access_secret="secret"
+            )
+            DataWarehouseTable.objects.create(
+                team=self.team,
+                name="test_table",
+                format=DataWarehouseTable.TableFormat.DeltaS3Wrapper,
+                url_pattern="http://s3/folder/",
+                credential=credential,
+                columns={"id": {"hogql": "StringDatabaseField", "clickhouse": "String", "schema_valid": True}},
+            )
+
+            printed = self._select("""
+                SELECT event FROM events
+                WHERE properties.$browser IN (
+                    SELECT id FROM test_table
+                )""")
+
+            if using_global_joins:
+                assert "globalIn" in printed
+            else:
+                assert "globalIn" not in printed
+
+            assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
+
+    @parameterized.expand([[True], [False]])
+    @pytest.mark.usefixtures("unittest_snapshot")
+    def test_s3_tables_global_join_anonymous_tables(self, using_global_joins):
+        with mock.patch("posthog.hogql.resolver.USE_GLOBAL_JOINS", using_global_joins):
+            credential = DataWarehouseCredential.objects.create(
+                team=self.team, access_key="key", access_secret="secret"
+            )
+            DataWarehouseTable.objects.create(
+                team=self.team,
+                name="test_table",
+                format=DataWarehouseTable.TableFormat.DeltaS3Wrapper,
+                url_pattern="http://s3/folder/",
+                credential=credential,
+                columns={"id": {"hogql": "StringDatabaseField", "clickhouse": "String", "schema_valid": True}},
+            )
+
+            printed = self._select("""
+                select e.event, ij.remote_id
+                from events e
+                inner join (
+                    select *
+                    from (
+                        select p.id as person_id, rt.id as remote_id
+                        from persons p
+                        left join (
+                            select * from test_table
+                        ) rt on rt.id = p.id
+                    )
+                ) as ij on e.event = ij.remote_id""")
+
+            if using_global_joins:
+                assert "GLOBAL INNER JOIN" in printed
+            else:
+                assert "GLOBAL INNER JOIN" not in printed
+
+            assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
 
 
 class TestPrinted(APIBaseTest):

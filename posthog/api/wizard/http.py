@@ -12,6 +12,13 @@ from openai.types.chat import (
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
+from posthog.api.wizard.utils import json_schema_to_gemini_schema
+from posthog.cloud_utils import get_api_host
+from posthog.exceptions_capture import capture_exception
+from posthog.models.project import Project
+from posthog.permissions import APIScopePermission
+from posthog.rate_limit import SetupWizardAuthenticationRateThrottle, SetupWizardQueryRateThrottle
+from posthog.user_permissions import UserPermissions
 from posthoganalytics.ai.gemini import genai
 from posthoganalytics.ai.openai import OpenAI
 from rest_framework import exceptions, response, serializers, viewsets
@@ -20,14 +27,6 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-
-from posthog.api.wizard.utils import json_schema_to_gemini_schema
-from posthog.cloud_utils import get_api_host
-from posthog.exceptions_capture import capture_exception
-from posthog.models.project import Project
-from posthog.permissions import APIScopePermission
-from posthog.rate_limit import SetupWizardAuthenticationRateThrottle, SetupWizardQueryRateThrottle
-from posthog.user_permissions import UserPermissions
 
 SETUP_WIZARD_CACHE_PREFIX = "setup-wizard:v1:"
 SETUP_WIZARD_CACHE_TIMEOUT = 600

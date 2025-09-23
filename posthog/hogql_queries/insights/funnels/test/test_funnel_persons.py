@@ -4,7 +4,6 @@ from uuid import UUID
 
 from django.utils import timezone
 from freezegun import freeze_time
-
 from posthog.constants import INSIGHT_FUNNELS
 from posthog.hogql_queries.actors_query_runner import ActorsQueryRunner
 from posthog.hogql_queries.legacy_compatibility.filter_to_query import filter_to_query

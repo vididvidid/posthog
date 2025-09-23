@@ -2,15 +2,14 @@ import inspect
 import json
 from typing import TYPE_CHECKING, Any, Optional
 
-from rest_framework import request
-
+from posthog.constants import PROPERTIES
 from posthog.hogql.context import HogQLContext
-from .mixins.common import BaseParamMixin
 from posthog.models.utils import sane_repr
 from posthog.utils import encode_get_request_params
+from rest_framework import request
 from rest_framework.exceptions import ValidationError
 
-from posthog.constants import PROPERTIES
+from .mixins.common import BaseParamMixin
 
 if TYPE_CHECKING:
     from posthog.models.team.team import Team

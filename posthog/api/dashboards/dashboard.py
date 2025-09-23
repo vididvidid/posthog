@@ -1,27 +1,19 @@
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections.abc import AsyncGenerator
+from contextlib import nullcontext
 from typing import Any, Optional, cast
 
+import posthoganalytics
 import pydantic_core
 import structlog
+from asgiref.sync import sync_to_async
 from django.conf import settings
-from django.db.models import Prefetch
+from django.db.models import Prefetch, QuerySet
+from django.dispatch import receiver
+from django.http import StreamingHttpResponse
 from django.utils.timezone import now
-from rest_framework import exceptions, serializers, viewsets, status
-from rest_framework.permissions import SAFE_METHODS, BasePermission
-from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.serializers import BaseSerializer
-from rest_framework.utils.serializer_helpers import ReturnDict
-
-from posthog.api.dashboards.dashboard_template_json_schema_parser import (
-    DashboardTemplateCreationJSONSchemaParser,
-)
-from posthog.constants import GENERATED_DASHBOARD_PREFIX
-from posthog.models.group_type_mapping import GroupTypeMapping
-from posthog.models.insight_variable import InsightVariable
-from posthog.rbac.access_control_api_mixin import AccessControlViewSetMixin
-from posthog.rbac.user_access_control import UserAccessControlSerializerMixin
+from opentelemetry import trace
+from posthog.api.dashboards.dashboard_template_json_schema_parser import DashboardTemplateCreationJSONSchemaParser
 from posthog.api.forbid_destroy_model import ForbidDestroyModel
 from posthog.api.insight import InsightSerializer, InsightViewSet
 from posthog.api.monitoring import Feature, monitor
@@ -29,23 +21,64 @@ from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.api.shared import UserBasicSerializer
 from posthog.api.tagged_item import TaggedItemSerializerMixin, TaggedItemViewSetMixin
 from posthog.api.utils import action
+from posthog.clickhouse.client.async_task_chain import task_chain_context
+from posthog.constants import GENERATED_DASHBOARD_PREFIX
 from posthog.event_usage import report_user_action
 from posthog.helpers import create_dashboard_from_template
 from posthog.helpers.dashboard_templates import create_from_template
 from posthog.models import Dashboard, DashboardTile, Insight, Text
+from posthog.models.activity_logging.activity_log import Detail, changes_between, log_activity
+from posthog.models.alert import AlertConfiguration
 from posthog.models.dashboard_templates import DashboardTemplate
+from posthog.models.group_type_mapping import GroupTypeMapping
+from posthog.models.insight_variable import InsightVariable
+from posthog.models.signals import model_activity_signal
 from posthog.models.tagged_item import TaggedItem
 from posthog.models.user import User
+from posthog.rbac.access_control_api_mixin import AccessControlViewSetMixin
+from posthog.rbac.user_access_control import UserAccessControlSerializerMixin
+from posthog.renderers import SafeJSONRenderer, ServerSentEventRenderer
 from posthog.user_permissions import UserPermissionsSerializerMixin
 from posthog.utils import filters_override_requested_by_client, variables_override_requested_by_client
-from posthog.clickhouse.client.async_task_chain import task_chain_context
-from contextlib import nullcontext
-import posthoganalytics
-from posthog.hogql_queries.legacy_compatibility.feature_flag import dashboard_threads_enabled
-from opentelemetry import trace
+from rest_framework import exceptions, serializers, viewsets
+from rest_framework.permissions import SAFE_METHODS, BasePermission
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
+from rest_framework.utils.serializer_helpers import ReturnDict
 
+from ee.hogai.utils.aio import async_to_sync
 
 logger = structlog.get_logger(__name__)
+
+DASHBOARD_SHARED_FIELDS = [
+    "id",
+    "name",
+    "description",
+    "pinned",
+    "created_at",
+    "created_by",
+    "last_accessed_at",
+    "is_shared",
+    "deleted",
+    "creation_mode",
+    "filters",
+    "variables",
+    "breakdown_colors",
+    "data_color_theme_id",
+    "tags",
+    "restriction_level",
+    "effective_restriction_level",
+    "effective_privilege_level",
+    "user_access_level",
+    "access_control_version",
+    "last_refresh",
+    "persisted_filters",
+    "persisted_variables",
+    "team_id",
+]
+
+
 tracer = trace.get_tracer(__name__)
 
 
@@ -162,6 +195,7 @@ class DashboardBasicSerializer(
             "user_access_level",
             "access_control_version",
             "last_refresh",
+            "team_id",
         ]
         read_only_fields = fields
 
@@ -182,50 +216,55 @@ class DashboardBasicSerializer(
         return "v2"
 
 
-class DashboardSerializer(DashboardBasicSerializer):
-    tiles = serializers.SerializerMethodField()
+class DashboardMetadataSerializer(DashboardBasicSerializer):
     filters = serializers.SerializerMethodField()
     variables = serializers.SerializerMethodField()
     created_by = UserBasicSerializer(read_only=True)
-    use_template = serializers.CharField(write_only=True, allow_blank=True, required=False)
-    use_dashboard = serializers.IntegerField(write_only=True, allow_null=True, required=False)
-    delete_insights = serializers.BooleanField(write_only=True, required=False, default=False)
     effective_privilege_level = serializers.SerializerMethodField()
     effective_restriction_level = serializers.SerializerMethodField()
     access_control_version = serializers.SerializerMethodField()
     is_shared = serializers.BooleanField(source="is_sharing_enabled", read_only=True, required=False)
     breakdown_colors = serializers.JSONField(required=False)
     data_color_theme_id = serializers.IntegerField(required=False, allow_null=True)
+    persisted_filters = serializers.SerializerMethodField()
+    persisted_variables = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Dashboard
+        fields = DASHBOARD_SHARED_FIELDS
+        read_only_fields = ["creation_mode", "effective_restriction_level", "is_shared", "user_access_level"]
+
+    def get_filters(self, dashboard: Dashboard) -> dict:
+        request = self.context.get("request")
+        return filters_override_requested_by_client(request, dashboard)
+
+    def get_variables(self, dashboard: Dashboard) -> dict | None:
+        request = self.context.get("request")
+        return variables_override_requested_by_client(request, dashboard, list(self.context["insight_variables"]))
+
+    def get_persisted_filters(self, dashboard: Dashboard) -> dict | None:
+        return dashboard.filters if dashboard.filters else None
+
+    def get_persisted_variables(self, dashboard: Dashboard) -> dict | None:
+        return dashboard.variables if dashboard.variables else None
+
+
+class DashboardSerializer(DashboardMetadataSerializer):
+    tiles = serializers.SerializerMethodField()
+    use_template = serializers.CharField(write_only=True, allow_blank=True, required=False)
+    use_dashboard = serializers.IntegerField(write_only=True, allow_null=True, required=False)
+    delete_insights = serializers.BooleanField(write_only=True, required=False, default=False)
     _create_in_folder = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = Dashboard
         fields = [
-            "id",
-            "name",
-            "description",
-            "pinned",
-            "created_at",
-            "created_by",
-            "is_shared",
-            "deleted",
-            "creation_mode",
+            *DASHBOARD_SHARED_FIELDS,
+            "tiles",
             "use_template",
             "use_dashboard",
             "delete_insights",
-            "filters",
-            "variables",
-            "breakdown_colors",
-            "data_color_theme_id",
-            "tags",
-            "tiles",
-            "restriction_level",
-            "effective_restriction_level",
-            "effective_privilege_level",
-            "user_access_level",
-            "access_control_version",
             "_create_in_folder",
-            "last_refresh",
         ]
         read_only_fields = ["creation_mode", "effective_restriction_level", "is_shared", "user_access_level"]
 
@@ -337,6 +376,7 @@ class DashboardSerializer(DashboardBasicSerializer):
                 insight=insight,
                 layouts=existing_tile.layouts,
                 color=existing_tile.color,
+                filters_overrides=existing_tile.filters_overrides,
             )
         elif existing_tile.text:
             new_data = {
@@ -353,6 +393,7 @@ class DashboardSerializer(DashboardBasicSerializer):
                 text=text,
                 layouts=existing_tile.layouts,
                 color=existing_tile.color,
+                filters_overrides=existing_tile.filters_overrides,
             )
 
     @monitor(feature=Feature.DASHBOARD, endpoint="dashboard", method="PATCH")
@@ -399,6 +440,12 @@ class DashboardSerializer(DashboardBasicSerializer):
         for tile_data in tiles:
             self._update_tiles(instance, tile_data, user)
 
+        duplicate_tiles = initial_data.pop("duplicate_tiles", [])
+        for tile_data in duplicate_tiles:
+            existing_tile = DashboardTile.objects.get(dashboard=instance, id=tile_data["id"])
+            existing_tile.layouts = {}
+            self._deep_duplicate_tiles(instance, existing_tile)
+
         if "request" in self.context:
             report_user_action(user, "dashboard updated", instance.get_analytics_metadata())
 
@@ -433,7 +480,9 @@ class DashboardSerializer(DashboardBasicSerializer):
                 id=tile_data.get("id", None),
                 defaults={**tile_data, "text": text, "dashboard": instance},
             )
-        elif "deleted" in tile_data or "color" in tile_data or "layouts" in tile_data:
+        elif (
+            "deleted" in tile_data or "color" in tile_data or "layouts" in tile_data or "filters_overrides" in tile_data
+        ):
             tile_data.pop("insight", None)  # don't ever update insight tiles here
 
             DashboardTile.objects.update_or_create(
@@ -473,12 +522,17 @@ class DashboardSerializer(DashboardBasicSerializer):
 
         serialized_tiles: list[ReturnDict] = []
 
-        tiles = DashboardTile.dashboard_queryset(dashboard.tiles).prefetch_related(
+        tiles = DashboardTile.dashboard_queryset(dashboard.tiles.all()).prefetch_related(
             Prefetch(
                 "insight__tagged_items",
                 queryset=TaggedItem.objects.select_related("tag"),
                 to_attr="prefetched_tags",
-            )
+            ),
+            Prefetch(
+                "insight__alertconfiguration_set",
+                queryset=AlertConfiguration.objects.select_related("created_by"),
+                to_attr="_prefetched_alerts",
+            ),
         )
         self.user_permissions.set_preloaded_dashboard_tiles(list(tiles))
 
@@ -490,13 +544,15 @@ class DashboardSerializer(DashboardBasicSerializer):
             group_properties={"organization": {"id": str(team.organization_id)}},
         )
 
+        layout_size = "sm"  # default layout size
+
         # Sort tiles by layout to ensure insights are computed in order of appearance on dashboard
-        # sm more common than xs, so we sort by sm
+        # Use the specified layout size to get the correct order for the current viewport
         sorted_tiles = sorted(
             tiles,
             key=lambda tile: (
-                tile.layouts.get("sm", {}).get("y", 100),
-                tile.layouts.get("sm", {}).get("x", 100),
+                tile.layouts.get(layout_size, {}).get("y", 100),
+                tile.layouts.get(layout_size, {}).get("x", 100),
             ),
         )
 
@@ -505,45 +561,11 @@ class DashboardSerializer(DashboardBasicSerializer):
             if not sorted_tiles:
                 return []
 
-            request = self.context.get("request")
-            user = request.user if request and hasattr(request, "user") else None
-            use_threads = dashboard_threads_enabled(team, user=user)
-
-            if settings.IN_UNIT_TESTING and not use_threads:
-                for order, tile in enumerate(sorted_tiles):
-                    order, tile_data = serialize_tile_with_context(tile, order, self.context)
-                    serialized_tiles.append(cast(ReturnDict, tile_data))
-            else:
-                max_workers = min(len(sorted_tiles), 10)
-
-                with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                    futures = []
-                    for order, tile in enumerate(sorted_tiles):
-                        future = executor.submit(serialize_tile_with_context, tile, order, self.context)
-                        futures.append(future)
-
-                    tile_results: list[ReturnDict | None] = [None] * len(sorted_tiles)
-                    for future in as_completed(futures):
-                        order, tile_data = future.result()
-                        tile_results[order] = cast(ReturnDict, tile_data)
-
-                    serialized_tiles.extend([result for result in tile_results if result is not None])
+            for order, tile in enumerate(sorted_tiles):
+                order, tile_data = serialize_tile_with_context(tile, order, self.context)
+                serialized_tiles.append(cast(ReturnDict, tile_data))
 
         return serialized_tiles
-
-    def get_filters(self, dashboard: Dashboard) -> dict:
-        request = self.context.get("request")
-        if request:
-            filters_override = filters_override_requested_by_client(request)
-
-            if filters_override is not None:
-                return filters_override
-
-        return dashboard.filters
-
-    def get_variables(self, dashboard: Dashboard) -> dict | None:
-        request = self.context.get("request")
-        return variables_override_requested_by_client(request, dashboard, list(self.context["insight_variables"]))
 
     def validate(self, data):
         if data.get("use_dashboard", None) and data.get("use_template", None):
@@ -569,6 +591,7 @@ class DashboardsViewSet(
     scope_object = "dashboard"
     queryset = Dashboard.objects_including_soft_deleted.order_by("-pinned", "name")
     permission_classes = [CanEditDashboard]
+    renderer_classes = [SafeJSONRenderer, ServerSentEventRenderer]
 
     @tracer.start_as_current_span("DashboardViewSet.get_serializer_context")
     def get_serializer_context(self) -> dict[str, Any]:
@@ -579,6 +602,14 @@ class DashboardsViewSet(
 
     def get_serializer_class(self) -> type[BaseSerializer]:
         return DashboardBasicSerializer if self.action == "list" else DashboardSerializer
+
+    def filter_queryset(self, queryset: QuerySet) -> QuerySet:
+        queryset = super().filter_queryset(queryset)
+        tags = self.request.query_params.getlist("tags")
+        if not tags:
+            return queryset
+
+        return queryset.filter(tagged_items__tag__name__in=tags).distinct()
 
     @tracer.start_as_current_span("DashboardViewSet.dangerously_get_queryset")
     def dangerously_get_queryset(self):
@@ -646,23 +677,119 @@ class DashboardsViewSet(
         return Response(serializer.data)
 
     # ******************************************
-    # /projects/:id/dashboard/:id/viewed
+    # /projects/:id/dashboard/:id/stream_tiles
     # ******************************************
-    @action(methods=["POST"], detail=True)
-    def viewed(self, *args: Any, **kwargs: Any) -> Response:
-        from posthog.hogql_queries.utils.event_usage import log_event_usage_from_insight
+    @action(methods=["GET"], detail=True, url_path="stream_tiles")
+    def stream_tiles(self, request: Request, *args: Any, **kwargs: Any) -> StreamingHttpResponse:
+        """Stream dashboard metadata and tiles via Server-Sent Events. Sends metadata first, then tiles as they are rendered."""
+        dashboard = self.get_object()  # This will raise 404 if not found - let it bubble up normally
 
-        insights = (
-            Insight.objects.filter(dashboard_tiles__dashboard=self.get_object()).distinct().only("query_metadata")
-        )
-        for insight in insights.iterator(chunk_size=100):
-            log_event_usage_from_insight(
-                insight,
-                team_id=self.team_id,
-                user_id=self.request.user.pk,
+        # Do all database operations and data loading synchronously first
+        dashboard.last_accessed_at = now()
+        dashboard.save(update_fields=["last_accessed_at"])
+
+        # Prepare metadata with initial tiles
+        metadata_serializer = DashboardMetadataSerializer(dashboard, context=self.get_serializer_context())
+        metadata_data = metadata_serializer.data
+
+        # Create serializer context for tiles
+        context = self.get_serializer_context()
+        context.update({"dashboard": dashboard})
+
+        # Get tiles with proper prefetch
+        tiles = DashboardTile.dashboard_queryset(dashboard.tiles.all()).prefetch_related(
+            Prefetch(
+                "insight__tagged_items",
+                queryset=TaggedItem.objects.select_related("tag"),
+                to_attr="prefetched_tags",
             )
+        )
 
-        return Response(status=status.HTTP_201_CREATED)
+        layout_size = self._get_layout_size_from_request(request)
+
+        sorted_tiles = sorted(
+            tiles,
+            key=lambda tile: (
+                tile.layouts.get(layout_size, {}).get("y", 100),
+                tile.layouts.get(layout_size, {}).get("x", 100),
+            ),
+        )
+
+        # Async generator that handles progressive tile serialization and streaming
+        async def async_tile_stream_generator() -> AsyncGenerator[bytes, None]:
+            renderer = SafeJSONRenderer()
+
+            try:
+                # Serialize the first 2 tiles (or fewer if dashboard has less) for inclusion in metadata
+                initial_tiles = []
+                initial_tile_count = min(2, len(sorted_tiles))
+
+                for order in range(initial_tile_count):
+                    tile = sorted_tiles[order]
+                    try:
+                        order_result, tile_data = await sync_to_async(
+                            serialize_tile_with_context, thread_sensitive=True
+                        )(tile, order, context)
+                        initial_tiles.append(tile_data)
+                    except Exception as e:
+                        logger.exception(f"Error serializing initial tile {tile.id}: {e}")
+                        # Add error tile to initial tiles
+                        initial_tiles.append(
+                            {
+                                "id": tile.id,
+                                "error": {"type": type(e).__name__, "message": str(e)},
+                            }
+                        )
+
+                metadata_data["tiles"] = initial_tiles
+
+                metadata_json = renderer.render({"type": "metadata", "dashboard": metadata_data}).decode()
+                yield f"data: {metadata_json}\n\n".encode()
+
+                # Stream remaining tiles (starting from tile 2 if we have more than 2 tiles)
+                for order in range(initial_tile_count, len(sorted_tiles)):
+                    tile = sorted_tiles[order]
+                    try:
+                        order_result, tile_data = await sync_to_async(
+                            serialize_tile_with_context, thread_sensitive=True
+                        )(tile, order, context)
+                        tile_json = renderer.render({"type": "tile", "order": order, "tile": tile_data}).decode()
+                        yield f"data: {tile_json}\n\n".encode()
+                    except Exception as e:
+                        logger.exception(f"Error serializing tile {tile.id}: {e}")
+                        error_json = renderer.render({"type": "error", "tile_id": tile.id, "error": str(e)}).decode()
+                        yield f"data: {error_json}\n\n".encode()
+
+                # Send completion signal
+                complete_json = renderer.render({"type": "complete"}).decode()
+                yield f"data: {complete_json}\n\n".encode()
+
+            except Exception as e:
+                logger.exception(f"Error in tile streaming: {e}")
+                error_json = renderer.render({"type": "error", "error": str(e)}).decode()
+                yield f"data: {error_json}\n\n".encode()
+
+        response = StreamingHttpResponse(
+            streaming_content=(
+                async_tile_stream_generator()
+                if settings.SERVER_GATEWAY_INTERFACE == "ASGI"
+                else async_to_sync(lambda: async_tile_stream_generator())
+            ),
+            content_type=ServerSentEventRenderer.media_type,
+        )
+        return response
+
+    def _get_layout_size_from_request(self, request: Request) -> str:
+        """Extract layout size parameter from request."""
+        layout_size = "sm"
+
+        if request and hasattr(request, "query_params"):
+            # Check for both camelCase (from frontend) and snake_case (for compatibility)
+            layout_size = request.query_params.get("layoutSize") or request.query_params.get("layout_size") or "sm"
+            if layout_size not in ["sm", "xs"]:
+                layout_size = "sm"  # fallback to sm if invalid value
+
+        return layout_size
 
     @action(methods=["PATCH"], detail=True)
     def move_tile(self, request: Request, *args: Any, **kwargs: Any) -> Response:
@@ -732,3 +859,23 @@ class LegacyDashboardsViewSet(DashboardsViewSet):
 
 class LegacyInsightViewSet(InsightViewSet):
     param_derived_from_user_current_team = "project_id"
+
+
+@receiver(model_activity_signal, sender=Dashboard)
+def handle_dashboard_change(
+    sender, scope, before_update, after_update, activity, user, was_impersonated=False, **kwargs
+):
+    log_activity(
+        organization_id=after_update.team.organization_id,
+        team_id=after_update.team_id,
+        user=user,
+        was_impersonated=was_impersonated,
+        item_id=after_update.id,
+        scope=scope,
+        activity=activity,
+        detail=Detail(
+            changes=changes_between(scope, previous=before_update, current=after_update),
+            name=after_update.name,
+            type="dashboard",
+        ),
+    )

@@ -6,13 +6,12 @@ import json
 import threading
 import time
 
-from temporalio import activity, workflow
-from temporalio.common import RetryPolicy
-
 from posthog.temporal.common.base import PostHogWorkflow
 from posthog.temporal.common.heartbeat import Heartbeater
 from posthog.temporal.common.heartbeat_sync import HeartbeaterSync
 from posthog.temporal.common.shutdown import ShutdownMonitor
+from temporalio import activity, workflow
+from temporalio.common import RetryPolicy
 
 
 class WaitMode(enum.StrEnum):

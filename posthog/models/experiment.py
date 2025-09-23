@@ -1,13 +1,12 @@
-from typing import TYPE_CHECKING
-from django.db import models
-from django.utils import timezone
+from typing import TYPE_CHECKING, Any
 
+from django.db import models
+from django.db.models import QuerySet
+from django.utils import timezone
+from posthog.models.activity_logging.model_activity import ModelActivityMixin
 from posthog.models.file_system.file_system_mixin import FileSystemSyncMixin
 from posthog.models.file_system.file_system_representation import FileSystemRepresentation
-from django.db.models import QuerySet
 from posthog.models.utils import RootTeamMixin
-from posthog.models.activity_logging.model_activity import ModelActivityMixin
-
 
 if TYPE_CHECKING:
     from posthog.models.team import Team
@@ -56,6 +55,8 @@ class Experiment(FileSystemSyncMixin, ModelActivityMixin, RootTeamMixin, models.
 
     metrics = models.JSONField(default=list, null=True, blank=True)
     metrics_secondary = models.JSONField(default=list, null=True, blank=True)
+    primary_metrics_ordered_uuids = models.JSONField(default=None, null=True, blank=True)
+    secondary_metrics_ordered_uuids = models.JSONField(default=None, null=True, blank=True)
     saved_metrics: models.ManyToManyField = models.ManyToManyField(
         "ExperimentSavedMetric", blank=True, related_name="experiments", through="ExperimentToSavedMetric"
     )
@@ -112,7 +113,7 @@ class Experiment(FileSystemSyncMixin, ModelActivityMixin, RootTeamMixin, models.
         )
 
 
-class ExperimentHoldout(RootTeamMixin, models.Model):
+class ExperimentHoldout(ModelActivityMixin, RootTeamMixin, models.Model):
     name = models.CharField(max_length=400)
     description = models.CharField(max_length=400, null=True, blank=True)
     team = models.ForeignKey("Team", on_delete=models.CASCADE)
@@ -124,6 +125,13 @@ class ExperimentHoldout(RootTeamMixin, models.Model):
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args: Any, skip_activity_log: bool = False, **kwargs: Any) -> None:
+        if skip_activity_log:
+            # Bypass ModelActivityMixin.save() and call Model.save() directly
+            super(ModelActivityMixin, self).save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
 
 
 class ExperimentSavedMetric(ModelActivityMixin, RootTeamMixin, models.Model):
@@ -155,3 +163,31 @@ class ExperimentToSavedMetric(models.Model):
 
     def __str__(self):
         return f"{self.experiment.name} - {self.saved_metric.name} - {self.metadata}"
+
+
+class ExperimentMetricResult(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    experiment = models.ForeignKey("Experiment", on_delete=models.CASCADE)
+    metric_uuid = models.CharField(max_length=255)
+    query_from = models.DateTimeField()
+    query_to = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    result = models.JSONField(null=True, blank=True, default=None)
+    query_id = models.CharField(max_length=255, null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ["experiment", "metric_uuid", "query_to"]
+        indexes = [
+            models.Index(fields=["experiment", "metric_uuid", "query_to"]),
+        ]
+
+    def __str__(self):
+        return f"ExperimentMetricResult({self.experiment_id}, {self.metric_uuid}, {self.query_from}, {self.status})"

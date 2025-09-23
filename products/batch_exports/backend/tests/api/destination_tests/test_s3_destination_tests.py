@@ -3,13 +3,8 @@ import uuid
 
 import aioboto3
 import pytest
-import pytest_asyncio
 from django.conf import settings
-
-from products.batch_exports.backend.api.destination_tests import (
-    S3EnsureBucketTestStep,
-    Status,
-)
+from products.batch_exports.backend.api.destination_tests import S3EnsureBucketTestStep, Status
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -27,7 +22,7 @@ def bucket_name(request) -> str:
         return f"{TEST_ROOT_BUCKET}-{str(uuid.uuid4())}"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def minio_client(bucket_name):
     """Manage an S3 client to interact with a MinIO bucket.
 

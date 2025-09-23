@@ -5,7 +5,6 @@ from typing import Optional, cast
 
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
-
 from posthog.hogql import ast
 from posthog.hogql.constants import LimitContext
 from posthog.hogql.parser import parse_expr

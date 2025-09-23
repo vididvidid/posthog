@@ -5,9 +5,9 @@ import time
 from typing import Any
 
 import pytest
+from posthog.models.instance_setting import set_instance_setting
 
 from ee.api.test.base import APILicensedTest
-from posthog.models.instance_setting import set_instance_setting
 
 
 @pytest.mark.skip_on_multitenancy

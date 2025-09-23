@@ -8,9 +8,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompt_values import PromptValue
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from posthoganalytics.ai.langchain import CallbackHandler
-
 from posthog.models import Action
+from posthoganalytics.ai.langchain import CallbackHandler
 
 from .actions import ActionSummarizer
 from .prompts import ACTIONS_SUMMARIZER_SYSTEM_PROMPT

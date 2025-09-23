@@ -1,7 +1,6 @@
 from collections.abc import Iterator
 
 import pytest
-
 from posthog.clickhouse.cluster import ClickhouseCluster, Query, get_cluster
 from posthog.clickhouse.custom_metrics import MetricsClient
 from posthog.test.base import reset_clickhouse_database

@@ -1,30 +1,29 @@
 import dataclasses
 from typing import Optional
+from zoneinfo import ZoneInfo
+
+from django.db.models import QuerySet
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from posthog.api.insight import InsightBasicSerializer
+from posthog.api.routing import TeamAndOrgViewSetMixin
+from posthog.api.shared import UserBasicSerializer
+from posthog.constants import AvailableFeature
+from posthog.models import User
+from posthog.models.activity_logging.activity_log import ActivityContextBase, Detail, changes_between, log_activity
+from posthog.models.alert import (
+    AlertCheck,
+    AlertConfiguration,
+    AlertSubscription,
+    Threshold,
+    are_alerts_supported_for_insight,
+)
+from posthog.models.signals import model_activity_signal
+from posthog.schema import AlertState
+from posthog.utils import relative_date_parse
 from rest_framework import serializers, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from django.db.models import QuerySet
-
-from posthog.api.routing import TeamAndOrgViewSetMixin
-from posthog.api.shared import UserBasicSerializer
-from posthog.models import User
-from posthog.models.alert import (
-    AlertConfiguration,
-    AlertCheck,
-    Threshold,
-    AlertSubscription,
-    are_alerts_supported_for_insight,
-)
-from posthog.schema import AlertState
-from posthog.api.insight import InsightBasicSerializer
-
-from posthog.utils import relative_date_parse
-from zoneinfo import ZoneInfo
-from posthog.constants import AvailableFeature
-from posthog.models.activity_logging.activity_log import Detail, log_activity, changes_between, ActivityContextBase
-from posthog.models.signals import model_activity_signal
-from django.dispatch import receiver
-from django.db.models.signals import pre_delete
 
 
 class ThresholdSerializer(serializers.ModelSerializer):

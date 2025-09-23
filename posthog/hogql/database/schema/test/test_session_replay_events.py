@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from django.utils.timezone import now
 from freezegun import freeze_time
-
 from posthog.clickhouse.client import sync_execute
 from posthog.hogql import ast
 from posthog.hogql.parser import parse_select

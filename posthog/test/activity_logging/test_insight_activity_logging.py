@@ -1,9 +1,7 @@
 import random
 import string
-from unittest import mock
 
 from dateutil import parser
-
 from posthog.models import Dashboard, DashboardTile, Insight, Tag
 from posthog.models.activity_logging.activity_log import Change, changes_between
 from posthog.test.base import BaseTest
@@ -30,13 +28,6 @@ class TestChangesBetweenInsights(BaseTest):
                     }
                 ],
             ),
-            Change(
-                type="Insight",
-                field="query_metadata",
-                action="changed",
-                before=mock.ANY,
-                after=mock.ANY,
-            ),
         ]
 
         assert actual == expected
@@ -48,13 +39,6 @@ class TestChangesBetweenInsights(BaseTest):
             current=self._an_insight_with(name="new name"),
         )
         expected = [
-            Change(
-                type="Insight",
-                field="query_metadata",
-                action="changed",
-                before=mock.ANY,
-                after=mock.ANY,
-            ),
             Change(
                 type="Insight",
                 field="name",
@@ -75,13 +59,6 @@ class TestChangesBetweenInsights(BaseTest):
         expected = [
             Change(
                 type="Insight",
-                field="query_metadata",
-                action="changed",
-                before=mock.ANY,
-                after=mock.ANY,
-            ),
-            Change(
-                type="Insight",
                 field="tags",
                 action="changed",
                 before=["before", "tags"],
@@ -100,13 +77,6 @@ class TestChangesBetweenInsights(BaseTest):
         expected = [
             Change(
                 type="Insight",
-                field="query_metadata",
-                action="changed",
-                before=mock.ANY,
-                after=mock.ANY,
-            ),
-            Change(
-                type="Insight",
                 field="derived_name",
                 action="changed",
                 before="starting",
@@ -123,13 +93,6 @@ class TestChangesBetweenInsights(BaseTest):
             current=self._an_insight_with(description="after"),
         )
         expected = [
-            Change(
-                type="Insight",
-                field="query_metadata",
-                action="changed",
-                before=mock.ANY,
-                after=mock.ANY,
-            ),
             Change(
                 type="Insight",
                 field="description",

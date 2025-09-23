@@ -1,12 +1,10 @@
 from typing import Optional
 
 from celery import shared_task
-
+from django.utils import timezone
 from posthog.models.action.action import Action
 from posthog.plugins.plugin_server_api import reload_hog_flows_on_workers
 from posthog.tasks.utils import CeleryQueue
-from django.utils import timezone
-
 from structlog import get_logger
 
 logger = get_logger(__name__)

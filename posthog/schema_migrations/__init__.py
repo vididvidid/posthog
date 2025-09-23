@@ -1,9 +1,10 @@
-import os
 import importlib
+import os
 import re
+
+import structlog
 from posthog.schema import NodeKind
 from posthog.schema_migrations.base import SchemaMigration
-import structlog
 
 logger = structlog.get_logger(__name__)
 

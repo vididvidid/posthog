@@ -1,14 +1,21 @@
+import { useValues } from 'kea'
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { IconTrending } from '@posthog/icons'
 
+import { FEATURE_FLAGS } from 'lib/constants'
 import { IconTrendingDown } from 'lib/lemon-ui/icons'
 import { humanFriendlyNumber } from 'lib/utils'
 
-import { ExperimentMetric, NewExperimentQueryResponse } from '~/queries/schema/schema-general'
+import {
+    ExperimentMetric,
+    ExperimentStatsBaseValidated,
+    NewExperimentQueryResponse,
+} from '~/queries/schema/schema-general'
 import { Experiment, InsightType } from '~/types'
 
+import { experimentLogic } from '../../experimentLogic'
 import { ChartEmptyState } from '../shared/ChartEmptyState'
 import { ChartLoadingState } from '../shared/ChartLoadingState'
 import { MetricHeader } from '../shared/MetricHeader'
@@ -16,16 +23,20 @@ import { useChartColors } from '../shared/colors'
 import {
     type ExperimentVariantResult,
     formatDeltaPercent,
+    formatMetricValue,
     getDelta,
+    getMetricSubtitleValues,
     getNiceTickValues,
     isDeltaPositive,
     isSignificant,
+    isWinning,
 } from '../shared/utils'
 import { ChartCell } from './ChartCell'
 import { DetailsButton } from './DetailsButton'
 import { DetailsModal } from './DetailsModal'
 import { GridLines } from './GridLines'
 import { renderTooltipContent } from './MetricRowGroupTooltip'
+import { TimeseriesModal } from './TimeseriesModal'
 import {
     CELL_HEIGHT,
     CHART_CELL_VIEW_BOX_HEIGHT,
@@ -40,16 +51,16 @@ interface MetricRowGroupProps {
     result: NewExperimentQueryResponse | null
     experiment: Experiment
     metricType: InsightType
-    metricIndex: number
+    displayOrder: number
     axisRange: number
     isSecondary: boolean
     isLastMetric: boolean
     isAlternatingRow: boolean
     onDuplicateMetric?: () => void
-    canDuplicateMetric?: boolean
     error?: any
     isLoading?: boolean
     hasMinimumExposureForResults?: boolean
+    exposuresLoading?: boolean
     showDetailsModal: boolean
 }
 
@@ -58,19 +69,26 @@ export function MetricRowGroup({
     result,
     experiment,
     metricType,
-    metricIndex,
+    displayOrder,
     axisRange,
     isSecondary,
     isLastMetric,
     isAlternatingRow,
     onDuplicateMetric,
-    canDuplicateMetric,
     error,
     isLoading,
     hasMinimumExposureForResults = true,
+    exposuresLoading = false,
     showDetailsModal,
 }: MetricRowGroupProps): JSX.Element {
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [timeseriesModalState, setTimeseriesModalState] = useState<{
+        isOpen: boolean
+        variantResult: ExperimentVariantResult | null
+    }>({
+        isOpen: false,
+        variantResult: null,
+    })
     const [tooltipState, setTooltipState] = useState<{
         isVisible: boolean
         variantResult: ExperimentVariantResult | null
@@ -86,16 +104,11 @@ export function MetricRowGroup({
     const colors = useChartColors()
     const scale = useAxisScale(axisRange, VIEW_BOX_WIDTH, SVG_EDGE_MARGIN)
 
+    const { featureFlags } = useValues(experimentLogic)
+    const timeseriesEnabled = featureFlags[FEATURE_FLAGS.EXPERIMENT_TIMESERIES]
+
     // Calculate total rows for loading/error states
     const totalRows = isLoading || error || !result ? 1 : 1 + (result.variant_results?.length || 0)
-
-    // Helper function to format data
-    const formatData = (data: any): string => {
-        const primaryValue = data.sum / data.number_of_samples
-        return metric && 'metric_type' in metric && metric.metric_type === 'mean'
-            ? primaryValue.toFixed(2)
-            : `${(primaryValue * 100).toFixed(2)}%`
-    }
 
     // Helper function to calculate tooltip position
     const calculateTooltipPosition = (
@@ -172,6 +185,20 @@ export function MetricRowGroup({
         }
     }
 
+    const handleTimeseriesClick = (variantResult: ExperimentVariantResult): void => {
+        setTimeseriesModalState({
+            isOpen: true,
+            variantResult,
+        })
+    }
+
+    const handleTimeseriesModalClose = (): void => {
+        setTimeseriesModalState({
+            isOpen: false,
+            variantResult: null,
+        })
+    }
+
     // Handle loading or error states
     if (isLoading || error || !result || !hasMinimumExposureForResults) {
         return (
@@ -190,11 +217,10 @@ export function MetricRowGroup({
                     }}
                 >
                     <MetricHeader
-                        metricIndex={metricIndex}
+                        displayOrder={displayOrder}
                         metric={metric}
                         metricType={metricType}
                         isPrimaryMetric={!isSecondary}
-                        canDuplicateMetric={canDuplicateMetric || false}
                         onDuplicateMetricClick={() => onDuplicateMetric?.()}
                     />
                 </td>
@@ -207,7 +233,7 @@ export function MetricRowGroup({
                     }`}
                     style={{ height: `${CELL_HEIGHT}px`, maxHeight: `${CELL_HEIGHT}px` }}
                 >
-                    {isLoading ? (
+                    {isLoading || exposuresLoading ? (
                         <ChartLoadingState height={CELL_HEIGHT} />
                     ) : (
                         <ChartEmptyState
@@ -227,6 +253,21 @@ export function MetricRowGroup({
     const baselineResult = result.baseline
     const variantResults = result.variant_results || []
 
+    const ratioMetricLabel = (variant: ExperimentStatsBaseValidated, metric: ExperimentMetric): JSX.Element => {
+        return (
+            <div className="text-xs text-muted">
+                {(() => {
+                    const { numerator, denominator } = getMetricSubtitleValues(variant, metric)
+                    return (
+                        <>
+                            {humanFriendlyNumber(numerator)} / {humanFriendlyNumber(denominator)}
+                        </>
+                    )
+                })()}
+            </div>
+        )
+    }
+
     return (
         <>
             {/* Tooltip portal */}
@@ -242,7 +283,7 @@ export function MetricRowGroup({
                             visibility: tooltipState.isPositioned ? 'visible' : 'hidden',
                         }}
                     >
-                        {renderTooltipContent(tooltipState.variantResult)}
+                        {renderTooltipContent(tooltipState.variantResult, metric)}
                     </div>,
                     document.body
                 )}
@@ -264,11 +305,10 @@ export function MetricRowGroup({
                     }}
                 >
                     <MetricHeader
-                        metricIndex={metricIndex}
+                        displayOrder={displayOrder}
                         metric={metric}
                         metricType={metricType}
                         isPrimaryMetric={!isSecondary}
-                        canDuplicateMetric={canDuplicateMetric || false}
                         onDuplicateMetricClick={() => onDuplicateMetric?.()}
                     />
                 </td>
@@ -291,11 +331,8 @@ export function MetricRowGroup({
                     style={{ height: `${CELL_HEIGHT}px`, maxHeight: `${CELL_HEIGHT}px` }}
                 >
                     <div className="text-sm">
-                        <div className="text-text-primary">{formatData(baselineResult)}</div>
-                        <div className="text-xs text-muted">
-                            {humanFriendlyNumber(baselineResult.sum)} /{' '}
-                            {humanFriendlyNumber(baselineResult.number_of_samples || 0)}
-                        </div>
+                        <div className="text-text-primary">{formatMetricValue(baselineResult, metric)}</div>
+                        {ratioMetricLabel(baselineResult, metric)}
                     </div>
                 </td>
 
@@ -331,7 +368,6 @@ export function MetricRowGroup({
                                 metric={metric}
                                 result={result}
                                 experiment={experiment}
-                                metricIndex={metricIndex}
                                 isSecondary={isSecondary}
                             />
                         </>
@@ -376,11 +412,12 @@ export function MetricRowGroup({
                 const isLastRow = index === variantResults.length - 1
                 const significant = isSignificant(variant)
                 const deltaPositive = isDeltaPositive(variant)
+                const winning = isWinning(variant, metric.goal)
                 const deltaText = formatDeltaPercent(variant)
 
                 return (
                     <tr
-                        key={`${metricIndex}-${variant.key}`}
+                        key={`${metric.uuid}-${variant.key}`}
                         className="hover:bg-bg-hover group [&:last-child>td]:border-b-0"
                         style={{ height: `${CELL_HEIGHT}px`, maxHeight: `${CELL_HEIGHT}px` }}
                         onMouseEnter={(e) => handleTooltipMouseEnter(e, variant)}
@@ -405,15 +442,12 @@ export function MetricRowGroup({
                             style={{ height: `${CELL_HEIGHT}px`, maxHeight: `${CELL_HEIGHT}px` }}
                         >
                             <div className="text-sm">
-                                <div className="text-text-primary">{formatData(variant)}</div>
-                                <div className="text-xs text-muted">
-                                    {humanFriendlyNumber(variant.sum)} /{' '}
-                                    {humanFriendlyNumber(variant.number_of_samples || 0)}
-                                </div>
+                                <div className="text-text-primary">{formatMetricValue(variant, metric)}</div>
+                                {ratioMetricLabel(variant, metric)}
                             </div>
                         </td>
 
-                        {/* Change */}
+                        {/* Delta */}
                         <td
                             className={`w-20 pt-1 pl-3 pr-3 pb-1 text-left whitespace-nowrap overflow-hidden ${
                                 isAlternatingRow ? 'bg-bg-table' : 'bg-bg-light'
@@ -424,7 +458,7 @@ export function MetricRowGroup({
                                 <span
                                     className={`${
                                         significant
-                                            ? deltaPositive
+                                            ? winning
                                                 ? 'text-success font-semibold'
                                                 : 'text-danger font-semibold'
                                             : 'text-text-primary'
@@ -433,7 +467,7 @@ export function MetricRowGroup({
                                     {deltaText}
                                 </span>
                                 {significant && deltaPositive !== undefined && (
-                                    <span className={`flex-shrink-0 ${deltaPositive ? 'text-success' : 'text-danger'}`}>
+                                    <span className={`flex-shrink-0 ${winning ? 'text-success' : 'text-danger'}`}>
                                         {deltaPositive ? (
                                             <IconTrending className="w-4 h-4" />
                                         ) : (
@@ -447,15 +481,26 @@ export function MetricRowGroup({
                         {/* Chart */}
                         <ChartCell
                             variantResult={variant}
+                            metric={metric}
                             axisRange={axisRange}
-                            metricIndex={metricIndex}
+                            metricUuid={metric.uuid}
                             isAlternatingRow={isAlternatingRow}
                             isLastRow={isLastRow}
                             isSecondary={isSecondary}
+                            onTimeseriesClick={timeseriesEnabled ? () => handleTimeseriesClick(variant) : undefined}
                         />
                     </tr>
                 )
             })}
+            {timeseriesModalState.variantResult && (
+                <TimeseriesModal
+                    isOpen={timeseriesModalState.isOpen}
+                    onClose={handleTimeseriesModalClose}
+                    metric={metric}
+                    variantResult={timeseriesModalState.variantResult}
+                    experiment={experiment}
+                />
+            )}
         </>
     )
 }

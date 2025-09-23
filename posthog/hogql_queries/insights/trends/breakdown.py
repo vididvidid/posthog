@@ -1,7 +1,6 @@
 import json
 from typing import Union, cast
 
-
 from posthog.hogql import ast
 from posthog.hogql.constants import LimitContext
 from posthog.hogql.parser import parse_expr
@@ -13,6 +12,7 @@ from posthog.models.filters.mixins.utils import cached_property
 from posthog.models.team.team import Team
 from posthog.schema import (
     ActionsNode,
+    Breakdown as BreakdownSchema,
     BreakdownFilter,
     BreakdownType,
     DataWarehouseNode,
@@ -21,9 +21,6 @@ from posthog.schema import (
     InCohortVia,
     MultipleBreakdownType,
     TrendsQuery,
-)
-from posthog.schema import (
-    Breakdown as BreakdownSchema,
 )
 
 BREAKDOWN_OTHER_STRING_LABEL = "$$_posthog_breakdown_other_$$"

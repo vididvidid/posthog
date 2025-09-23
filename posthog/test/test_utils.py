@@ -1,7 +1,6 @@
 import base64
-from datetime import datetime
 import json
-from unittest.mock import patch, call
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -10,10 +9,8 @@ from django.http import HttpRequest
 from django.test import TestCase
 from django.test.client import RequestFactory
 from freezegun import freeze_time
-from rest_framework.request import Request
-
 from posthog.exceptions import RequestParsingError, UnspecifiedCompressionFallbackParsingError
-from posthog.models import EventDefinition
+from posthog.models import EventDefinition, GroupTypeMapping
 from posthog.settings.utils import get_from_env
 from posthog.test.base import BaseTest
 from posthog.utils import (
@@ -30,6 +27,8 @@ from posthog.utils import (
     refresh_requested_by_client,
     relative_date_parse,
 )
+from rest_framework.request import Request
+from unittest.mock import call, patch
 
 
 class TestAbsoluteUrls(TestCase):
@@ -579,3 +578,10 @@ class TestFlatten(TestCase):
             [4],
             [5, [6, 7]],
         ]
+
+
+def create_group_type_mapping_without_created_at(**kwargs) -> "GroupTypeMapping":
+    instance = GroupTypeMapping.objects.create(**kwargs)
+    GroupTypeMapping.objects.filter(id=instance.id).update(created_at=None)
+    instance.refresh_from_db()
+    return instance

@@ -6,11 +6,12 @@ import { useState } from 'react'
 import { IconArrowRight, IconClock, IconEye, IconFilter, IconHide, IconPlus, IconRevert, IconX } from '@posthog/icons'
 import { LemonBadge, LemonButton, LemonInput, LemonModal, LemonTab, LemonTabs, Popover } from '@posthog/lemon-ui'
 
+import { AccessControlAction } from 'lib/components/AccessControlAction'
 import { DateFilter } from 'lib/components/DateFilter/DateFilter'
 import { TaxonomicFilterGroupType } from 'lib/components/TaxonomicFilter/types'
 import UniversalFilters from 'lib/components/UniversalFilters/UniversalFilters'
 import { universalFiltersLogic } from 'lib/components/UniversalFilters/universalFiltersLogic'
-import { isUniversalGroupFilterLike } from 'lib/components/UniversalFilters/utils'
+import { isCommentTextFilter, isUniversalGroupFilterLike } from 'lib/components/UniversalFilters/utils'
 import { FEATURE_FLAGS } from 'lib/constants'
 import { useOnMountEffect } from 'lib/hooks/useOnMountEffect'
 import { LemonMenuOverlay } from 'lib/lemon-ui/LemonMenu/LemonMenu'
@@ -28,7 +29,15 @@ import { cohortsModel } from '~/models/cohortsModel'
 import { groupsModel } from '~/models/groupsModel'
 import { AndOrFilterSelect } from '~/queries/nodes/InsightViz/PropertyGroupFilters/AndOrFilterSelect'
 import { NodeKind } from '~/queries/schema/schema-general'
-import { RecordingUniversalFilters, ReplayTabs, SidePanelTab, UniversalFiltersGroup } from '~/types'
+import {
+    AccessControlLevel,
+    AccessControlResourceType,
+    PropertyOperator,
+    RecordingUniversalFilters,
+    ReplayTabs,
+    SidePanelTab,
+    UniversalFiltersGroup,
+} from '~/types'
 
 import { TimestampFormat, playerSettingsLogic } from '../player/playerSettingsLogic'
 import { playlistLogic } from '../playlist/playlistLogic'
@@ -93,7 +102,6 @@ export const RecordingsUniversalFiltersEmbedButton = ({
     const { setIsFiltersExpanded } = useActions(playlistLogic)
     const { playlistTimestampFormat } = useValues(playerSettingsLogic)
     const { setPlaylistTimestampFormat } = useActions(playerSettingsLogic)
-    const { isCinemaMode } = useValues(playerSettingsLogic)
 
     return (
         <>
@@ -132,34 +140,32 @@ export const RecordingsUniversalFiltersEmbedButton = ({
                     </LemonButton>
                 </>
             </MaxTool>
-            {!isCinemaMode && (
-                <div className="flex gap-2 mt-2 justify-between">
-                    <HideRecordingsMenu />
-                    <SettingsMenu
-                        highlightWhenActive={false}
-                        items={[
-                            {
-                                label: 'UTC',
-                                onClick: () => setPlaylistTimestampFormat(TimestampFormat.UTC),
-                                active: playlistTimestampFormat === TimestampFormat.UTC,
-                            },
-                            {
-                                label: 'Device',
-                                onClick: () => setPlaylistTimestampFormat(TimestampFormat.Device),
-                                active: playlistTimestampFormat === TimestampFormat.Device,
-                            },
-                            {
-                                label: 'Relative',
-                                onClick: () => setPlaylistTimestampFormat(TimestampFormat.Relative),
-                                active: playlistTimestampFormat === TimestampFormat.Relative,
-                            },
-                        ]}
-                        icon={<IconClock />}
-                        label={TimestampFormatToLabel[playlistTimestampFormat]}
-                        rounded={true}
-                    />
-                </div>
-            )}
+            <div className="flex gap-2 mt-2 justify-between">
+                <HideRecordingsMenu />
+                <SettingsMenu
+                    highlightWhenActive={false}
+                    items={[
+                        {
+                            label: 'UTC',
+                            onClick: () => setPlaylistTimestampFormat(TimestampFormat.UTC),
+                            active: playlistTimestampFormat === TimestampFormat.UTC,
+                        },
+                        {
+                            label: 'Device',
+                            onClick: () => setPlaylistTimestampFormat(TimestampFormat.Device),
+                            active: playlistTimestampFormat === TimestampFormat.Device,
+                        },
+                        {
+                            label: 'Relative',
+                            onClick: () => setPlaylistTimestampFormat(TimestampFormat.Relative),
+                            active: playlistTimestampFormat === TimestampFormat.Relative,
+                        },
+                    ]}
+                    icon={<IconClock />}
+                    label={TimestampFormatToLabel[playlistTimestampFormat]}
+                    rounded={true}
+                />
+            </div>
         </>
     )
 }
@@ -468,15 +474,22 @@ export const RecordingsUniversalFiltersEmbed = ({
                                     Update "{appliedSavedFilter.name || 'Unnamed'}"
                                 </LemonButton>
                             ) : (
-                                <LemonButton
-                                    type="secondary"
-                                    size="small"
-                                    onClick={() => setIsSaveFiltersModalOpen(true)}
-                                    disabledReason={(totalFiltersCount ?? 0) === 0 ? 'No filters applied' : undefined}
-                                    tooltip="Save filters for later"
+                                <AccessControlAction
+                                    resourceType={AccessControlResourceType.SessionRecording}
+                                    minAccessLevel={AccessControlLevel.Editor}
                                 >
-                                    Add to "Saved filters"
-                                </LemonButton>
+                                    <LemonButton
+                                        type="secondary"
+                                        size="small"
+                                        onClick={() => setIsSaveFiltersModalOpen(true)}
+                                        disabledReason={
+                                            (totalFiltersCount ?? 0) === 0 ? 'No filters applied' : undefined
+                                        }
+                                        tooltip="Save filters for later"
+                                    >
+                                        Add to "Saved filters"
+                                    </LemonButton>
+                                </AccessControlAction>
                             )}
                         </div>
                         <LemonButton
@@ -540,7 +553,12 @@ const RecordingsUniversalFilterGroup = (): JSX.Element => {
                         <RecordingsUniversalFilterGroup />
 
                         <Popover
-                            overlay={<UniversalFilters.PureTaxonomicFilter fullWidth={false} />}
+                            overlay={
+                                <UniversalFilters.PureTaxonomicFilter
+                                    fullWidth={false}
+                                    onChange={() => setIsPopoverVisible(false)}
+                                />
+                            }
                             placement="bottom"
                             visible={isPopoverVisible}
                             onClickOutside={() => setIsPopoverVisible(false)}
@@ -564,6 +582,11 @@ const RecordingsUniversalFilterGroup = (): JSX.Element => {
                         onChange={(value) => replaceGroupValue(index, value)}
                         initiallyOpen={allowInitiallyOpen}
                         metadataSource={{ kind: NodeKind.RecordingsQuery }}
+                        operatorAllowlist={
+                            isCommentTextFilter(filterOrGroup)
+                                ? [PropertyOperator.IsSet, PropertyOperator.Exact, PropertyOperator.IContains]
+                                : undefined
+                        }
                     />
                 )
             })}

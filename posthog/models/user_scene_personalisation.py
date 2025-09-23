@@ -1,6 +1,5 @@
 from django.db import models
-
-from posthog.models.utils import UUIDTModel, RootTeamMixin
+from posthog.models.utils import RootTeamMixin, UUIDTModel
 
 
 class UserScenePersonalisation(UUIDTModel, RootTeamMixin):

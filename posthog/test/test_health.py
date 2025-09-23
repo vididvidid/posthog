@@ -1,26 +1,27 @@
 import logging
-from contextlib import contextmanager
 import random
+from contextlib import contextmanager
 from typing import Optional
-from unittest import mock
-from unittest.mock import patch
 
 import django_redis.exceptions
 import kombu.connection
 import kombu.exceptions
 import psycopg2
 import pytest
+import requests
 from django.core.cache import cache
-from django.db import DEFAULT_DB_ALIAS
-from django.db import Error as DjangoDatabaseError
-from django.db import connections
+from django.db import (
+    DEFAULT_DB_ALIAS,
+    Error as DjangoDatabaseError,
+    connections,
+)
 from django.http import HttpResponse
 from django.test import Client
 from kafka.errors import KafkaError
-import requests
-
 from posthog.health import logger
 from posthog.kafka_client.client import KafkaProducerForTests
+from unittest import mock
+from unittest.mock import patch
 
 
 @pytest.mark.django_db

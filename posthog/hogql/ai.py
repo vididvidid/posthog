@@ -1,19 +1,21 @@
 import os
 from typing import TYPE_CHECKING, Optional
-import posthoganalytics
-from posthoganalytics.ai.openai import OpenAI
+
 import openai
+import posthoganalytics
 from posthog.event_usage import report_user_action
 from posthog.hogql.context import HogQLContext
 from posthog.hogql.errors import ExposedHogQLError
 from posthog.hogql.parser import parse_select
 from posthog.hogql.printer import print_ast
-from .database.database import create_hogql_database, serialize_database
 from posthog.utils import get_instance_region
+from posthoganalytics.ai.openai import OpenAI
+
+from .database.database import create_hogql_database, serialize_database
 from .query import create_default_modifiers_for_team
 
 if TYPE_CHECKING:
-    from posthog.models import User, Team
+    from posthog.models import Team, User
 
 openai_client = OpenAI(posthog_client=posthoganalytics) if os.getenv("OPENAI_API_KEY") else None  # type: ignore
 

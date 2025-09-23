@@ -3,8 +3,8 @@ from contextlib import contextmanager
 
 import structlog
 from django.conf import settings
-from prometheus_client import CollectorRegistry, Counter, push_to_gateway
 from posthog.exceptions_capture import capture_exception
+from prometheus_client import CollectorRegistry, Counter, push_to_gateway
 
 logger = structlog.get_logger(__name__)
 

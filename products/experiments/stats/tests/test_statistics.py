@@ -1,12 +1,7 @@
 import numpy as np
 import pytest
 
-from ..shared.statistics import (
-    InvalidStatisticError,
-    ProportionStatistic,
-    RatioStatistic,
-    SampleMeanStatistic,
-)
+from ..shared.statistics import InvalidStatisticError, ProportionStatistic, RatioStatistic, SampleMeanStatistic
 
 
 class TestSampleMeanStatistic:

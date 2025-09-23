@@ -2,7 +2,6 @@ import logging
 
 import structlog
 from django.core.management.base import BaseCommand
-
 from posthog.kafka_client.client import KafkaProducer
 from posthog.models import Person
 

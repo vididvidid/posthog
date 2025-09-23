@@ -4,8 +4,6 @@ import re
 from enum import StrEnum
 from typing import Any, Literal, Optional, Union, cast
 
-from pydantic import Field
-
 from posthog.hogql_queries.legacy_compatibility.clean_properties import clean_entity_properties, clean_global_properties
 from posthog.models.entity.entity import Entity as LegacyEntity
 from posthog.schema import (
@@ -15,6 +13,7 @@ from posthog.schema import (
     ChartDisplayType,
     CompareFilter,
     DataWarehouseNode,
+    DateRange,
     EventsNode,
     FunnelExclusionActionsNode,
     FunnelExclusionEventsNode,
@@ -22,7 +21,6 @@ from posthog.schema import (
     FunnelsFilter,
     FunnelsQuery,
     FunnelVizType,
-    DateRange,
     LifecycleFilter,
     LifecycleQuery,
     PathsFilter,
@@ -37,6 +35,7 @@ from posthog.schema import (
 )
 from posthog.types import InsightQueryNode
 from posthog.utils import str_to_bool
+from pydantic import Field
 
 
 class MathAvailability(StrEnum):

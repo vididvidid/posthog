@@ -1,3 +1,5 @@
+import { ExperimentMetric } from '~/queries/schema/schema-general'
+
 import { generateViolinPath } from '../legacy/violinUtils'
 import { useChartColors } from '../shared/colors'
 import {
@@ -23,22 +25,26 @@ import { useAxisScale } from './useAxisScale'
 
 interface ChartCellProps {
     variantResult: ExperimentVariantResult
+    metric: ExperimentMetric
     axisRange: number
-    metricIndex: number
+    metricUuid?: string
     showGridLines?: boolean
     isAlternatingRow?: boolean
     isLastRow?: boolean
     isSecondary?: boolean
+    onTimeseriesClick?: () => void
 }
 
 export function ChartCell({
     variantResult,
+    metric,
     axisRange,
-    metricIndex,
+    metricUuid,
     showGridLines = true,
     isAlternatingRow = false,
     isLastRow = false,
     isSecondary = false,
+    onTimeseriesClick,
 }: ChartCellProps): JSX.Element {
     const colors = useChartColors()
     const scale = useAxisScale(axisRange, VIEW_BOX_WIDTH, SVG_EDGE_MARGIN)
@@ -93,7 +99,8 @@ export function ChartCell({
                             <ChartGradients
                                 lower={lower}
                                 upper={upper}
-                                gradientId={`gradient-${isSecondary ? 'secondary' : 'primary'}-${metricIndex}-${
+                                metric={metric}
+                                gradientId={`gradient-${isSecondary ? 'secondary' : 'primary'}-${metricUuid ? metricUuid.slice(-8) : 'default'}-${
                                     variantResult.key
                                 }`}
                             />
@@ -102,10 +109,12 @@ export function ChartCell({
                             {isBayesianResult(variantResult) ? (
                                 <path
                                     d={generateViolinPath(x1, x2, y, barHeightPercent, deltaX)}
-                                    fill={`url(#gradient-${isSecondary ? 'secondary' : 'primary'}-${metricIndex}-${
+                                    fill={`url(#gradient-${isSecondary ? 'secondary' : 'primary'}-${metricUuid ? metricUuid.slice(-8) : 'default'}-${
                                         variantResult.key
                                     })`}
                                     opacity={CHART_BAR_OPACITY}
+                                    style={{ cursor: onTimeseriesClick ? 'pointer' : 'default' }}
+                                    onClick={onTimeseriesClick}
                                 />
                             ) : (
                                 <rect
@@ -113,12 +122,14 @@ export function ChartCell({
                                     y={y}
                                     width={x2 - x1}
                                     height={barHeightPercent}
-                                    fill={`url(#gradient-${isSecondary ? 'secondary' : 'primary'}-${metricIndex}-${
+                                    fill={`url(#gradient-${isSecondary ? 'secondary' : 'primary'}-${metricUuid ? metricUuid.slice(-8) : 'default'}-${
                                         variantResult.key
                                     })`}
                                     opacity={CHART_BAR_OPACITY}
                                     rx={3}
                                     ry={3}
+                                    style={{ cursor: onTimeseriesClick ? 'pointer' : 'default' }}
+                                    onClick={onTimeseriesClick}
                                 />
                             )}
 

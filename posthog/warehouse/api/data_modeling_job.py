@@ -1,9 +1,8 @@
-from rest_framework import serializers, viewsets, pagination
-from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-
 from posthog.api.routing import TeamAndOrgViewSetMixin
 from posthog.warehouse.models.data_modeling_job import DataModelingJob
+from rest_framework import pagination, serializers, viewsets
+from rest_framework.permissions import IsAuthenticated
 
 
 class DataModelingJobSerializer(serializers.ModelSerializer):

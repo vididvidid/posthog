@@ -3,7 +3,6 @@ import os
 import threading
 
 import structlog
-
 from posthog.settings.base_variables import DEBUG, TEST
 
 # Setup logging
