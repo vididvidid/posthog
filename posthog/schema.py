@@ -91,6 +91,7 @@ class AssistantContextualTool(StrEnum):
     SEARCH_INSIGHTS = "search_insights"
     SESSION_SUMMARIZATION = "session_summarization"
     CREATE_DASHBOARD = "create_dashboard"
+    CREATE_FEATURE_FLAG = "create_feature_flag"
 
 
 class AssistantDateRange(BaseModel):
@@ -1277,6 +1278,30 @@ class FailureMessage(BaseModel):
     content: Optional[str] = None
     id: Optional[str] = None
     type: Literal["ai/failure"] = "ai/failure"
+
+
+class FeatureFlagEvaluationRuntime(StrEnum):
+    SERVER = "server"
+    CLIENT = "client"
+    ALL = "all"
+
+
+class FeatureFlagFiltersSchema(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    groups: list[dict[str, Any]]
+    multivariate: Optional[dict[str, Any]] = None
+    payloads: Optional[dict[str, Any]] = None
+
+
+class FeatureFlagVariantSchema(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    key: str
+    name: Optional[str] = None
+    rollout_percentage: float
 
 
 class FileSystemCount(BaseModel):
@@ -3940,6 +3965,20 @@ class ExternalQueryError(BaseModel):
     )
     code: ExternalQueryErrorCode
     detail: str
+
+
+class FeatureFlagCreationSchema(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+    active: Optional[bool] = None
+    ensure_experience_continuity: Optional[bool] = None
+    evaluation_runtime: Optional[FeatureFlagEvaluationRuntime] = None
+    filters: FeatureFlagFiltersSchema
+    key: Optional[str] = None
+    name: str
+    rollout_percentage: Optional[float] = None
+    variants: Optional[list[FeatureFlagVariantSchema]] = None
 
 
 class FeaturePropertyFilter(BaseModel):
