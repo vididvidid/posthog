@@ -57,6 +57,14 @@ export const manifest: ProductManifest = {
             layout: 'app-container',
             defaultDocsPath: '/docs/llm-analytics/installation',
         },
+        LLMAnalyticsEvaluationEdit: {
+            import: () => import('./frontend/evaluations/LLMEvaluationEdit'),
+            projectBased: true,
+            name: 'LLM evaluation edit',
+            activityScope: 'LLMAnalytics',
+            layout: 'app-container',
+            defaultDocsPath: '/docs/llm-analytics/installation',
+        },
     },
     routes: {
         '/llm-analytics': ['LLMAnalytics', 'llmAnalytics'],
@@ -68,6 +76,8 @@ export const manifest: ProductManifest = {
         '/llm-analytics/playground': ['LLMAnalytics', 'llmAnalyticsPlayground'],
         '/llm-analytics/datasets': ['LLMAnalytics', 'llmAnalyticsDatasets'],
         '/llm-analytics/datasets/:id': ['LLMAnalyticsDataset', 'llmAnalyticsDataset'],
+        '/llm-analytics/evaluations': ['LLMAnalytics', 'llmAnalyticsEvaluations'],
+        '/llm-analytics/evaluations/:id': ['LLMAnalyticsEvaluationEdit', 'llmAnalytics'],
     },
     redirects: {
         '/llm-observability': (_params, searchParams, hashParams) =>
@@ -107,6 +117,9 @@ export const manifest: ProductManifest = {
         llmAnalyticsDatasets: (): string => '/llm-analytics/datasets',
         llmAnalyticsDataset: (id: string, params?: { item?: string }): string =>
             combineUrl(`/llm-analytics/datasets/${id}`, params).url,
+        llmAnalyticsEvaluations: (): string => '/llm-analytics/evaluations',
+        llmAnalyticsEvaluationNew: (): string => '/llm-analytics/evaluations/new',
+        llmAnalyticsEvaluation: (id: string): string => `/llm-analytics/evaluations/${id}`,
     },
     fileSystemTypes: {},
     treeItemsNew: [],
