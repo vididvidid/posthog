@@ -128,7 +128,9 @@ class CreateFeatureFlagTool(MaxTool):
                 key="", name="", active=False, filters={"groups": []}
             )
             capture_exception(
-                Exception(f"Feature flag creation graph returned unexpected output type: {type(result.get('output'))}"),
+                ValueError(
+                    f"Feature flag creation graph returned unexpected output type: {type(result.get('output'))}"
+                ),
                 {"team_id": self._team.id, "user_id": self._user.id, "result": str(result)},
             )
             return feature_flag_creation_schema
