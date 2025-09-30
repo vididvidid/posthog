@@ -487,6 +487,7 @@ export function FeatureFlags(): JSX.Element {
                     >
                         <MaxTool
                             identifier="create_feature_flag"
+                            active={featureFlags[FEATURE_FLAGS.FEATURE_FLAG_MAX_AI] === true}
                             initialMaxPrompt="Create a feature flag for "
                             suggestions={[
                                 'Create a feature flag for the new payment flow',
