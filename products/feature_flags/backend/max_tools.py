@@ -4,8 +4,6 @@ MaxTool for AI-powered feature flag creation.
 
 from typing import Any
 
-from unittest.mock import Mock
-
 from django.utils.text import slugify
 
 from asgiref.sync import async_to_sync, sync_to_async
@@ -74,8 +72,10 @@ async def generate_feature_flag_key(name: str, team: Team) -> str:
     return f"{base_key}-{random_id}"
 
 
-def create_mock_request(user: User, team: Team) -> Mock:
+def create_mock_request(user: User, team: Team):
     """Create a mock request object for serializer context."""
+    from unittest.mock import Mock
+
     mock_request = Mock()
     mock_request.user = user
     mock_request.method = "POST"
