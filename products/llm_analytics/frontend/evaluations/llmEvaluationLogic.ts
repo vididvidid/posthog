@@ -1,58 +1,15 @@
 import { actions, afterMount, kea, key, listeners, path, props, reducers, selectors } from 'kea'
+import { router } from 'kea-router'
+
+import api from 'lib/api'
+import { teamLogic } from 'scenes/teamLogic'
+import { urls } from 'scenes/urls'
 
 import type { llmEvaluationLogicType } from './llmEvaluationLogicType'
 import { EvaluationConditionSet, EvaluationConfig, EvaluationRun } from './types'
 
 export interface LLMEvaluationLogicProps {
     evaluationId: string
-}
-
-// Mock runs data
-const MOCK_RUNS: Record<string, EvaluationRun[]> = {
-    'eval-1': [
-        {
-            id: 'run-1',
-            evaluation_id: 'eval-1',
-            generation_id: 'gen-abc123',
-            timestamp: '2024-01-15T10:30:00Z',
-            input_preview: 'How do I reset my password?',
-            output_preview: 'To reset your password, go to the login page and click "Forgot Password"...',
-            result: true,
-            status: 'completed',
-        },
-        {
-            id: 'run-2',
-            evaluation_id: 'eval-1',
-            generation_id: 'gen-def456',
-            timestamp: '2024-01-15T10:25:00Z',
-            input_preview: 'What is the meaning of life?',
-            output_preview: 'The meaning of life is subjective and varies for each person...',
-            result: false,
-            status: 'completed',
-        },
-        {
-            id: 'run-3',
-            evaluation_id: 'eval-1',
-            generation_id: 'gen-ghi789',
-            timestamp: '2024-01-15T10:20:00Z',
-            input_preview: 'How to troubleshoot network issues?',
-            output_preview: 'Here are some steps to troubleshoot common network problems...',
-            result: true,
-            status: 'completed',
-        },
-    ],
-    'eval-2': [
-        {
-            id: 'run-4',
-            evaluation_id: 'eval-2',
-            generation_id: 'gen-jkl012',
-            timestamp: '2024-01-12T15:20:00Z',
-            input_preview: 'Tell me about diabetes treatment',
-            output_preview: 'I can provide general information, but please consult a healthcare professional...',
-            result: true,
-            status: 'completed',
-        },
-    ],
 }
 
 export const llmEvaluationLogic = kea<llmEvaluationLogicType>([
@@ -141,12 +98,20 @@ export const llmEvaluationLogic = kea<llmEvaluationLogicType>([
     listeners(({ actions, values, props }) => ({
         loadEvaluation: async () => {
             if (props.evaluationId && props.evaluationId !== 'new') {
-                // Find in shared mock data store
-                const evaluation = window.mockEvaluations?.find((e) => e.id === props.evaluationId) || null
+                try {
+                    const teamId = teamLogic.values.currentTeamId
+                    if (!teamId) {
+                        return
+                    }
 
-                // TODO: Replace with actual backend API call
-                // const evaluation = await api.evaluations.get(props.evaluationId)
-                actions.loadEvaluationSuccess(evaluation)
+                    const evaluation = await api.get(
+                        `/api/environments/${teamId}/evaluation_configs/${props.evaluationId}/`
+                    )
+                    actions.loadEvaluationSuccess(evaluation)
+                } catch (error) {
+                    console.error('Failed to load evaluation:', error)
+                    actions.loadEvaluationSuccess(null)
+                }
             } else if (props.evaluationId === 'new') {
                 // Initialize new evaluation
                 const newEvaluation: Partial<EvaluationConfig> = {
@@ -167,15 +132,9 @@ export const llmEvaluationLogic = kea<llmEvaluationLogicType>([
         },
 
         loadEvaluationRuns: async () => {
-            if (props.evaluationId && props.evaluationId !== 'new') {
-                // Get mock runs for this evaluation
-                const runs = MOCK_RUNS[props.evaluationId] || []
-                actions.loadEvaluationRunsSuccess(runs)
-
-                // TODO: Replace with actual backend API call
-                // const runs = await api.evaluations.getRuns(props.evaluationId)
-                // actions.loadEvaluationRunsSuccess(runs)
-            }
+            // Evaluation runs will be implemented later with ClickHouse
+            // For now, return empty array
+            actions.loadEvaluationRunsSuccess([])
         },
 
         refreshEvaluationRuns: async () => {
@@ -184,43 +143,32 @@ export const llmEvaluationLogic = kea<llmEvaluationLogicType>([
         },
 
         saveEvaluation: async () => {
-            // Simulate save delay
-            await new Promise((resolve) => setTimeout(resolve, 300))
-
-            if (props.evaluationId === 'new') {
-                // Create new evaluation
-                const newEvaluation: EvaluationConfig = {
-                    ...values.evaluation!,
-                    id: `eval-${Date.now()}`,
-                    total_runs: 0,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                } as EvaluationConfig
-
-                // Update shared mock store
-                if (window.mockEvaluations) {
-                    window.mockEvaluations.push(newEvaluation)
+            try {
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
                 }
 
-                // TODO: Replace with actual backend API call
-                // const response = await api.evaluations.create(newEvaluation)
-                actions.saveEvaluationSuccess(newEvaluation)
-            } else {
-                // Update existing evaluation
-                if (window.mockEvaluations) {
-                    const index = window.mockEvaluations.findIndex((e) => e.id === props.evaluationId)
-                    if (index >= 0) {
-                        window.mockEvaluations[index] = {
-                            ...window.mockEvaluations[index],
-                            ...values.evaluation!,
-                            updated_at: new Date().toISOString(),
-                        }
-                    }
-                }
+                if (props.evaluationId === 'new') {
+                    // Create new evaluation
+                    const response = await api.create(
+                        `/api/environments/${teamId}/evaluation_configs/`,
+                        values.evaluation!
+                    )
+                    actions.saveEvaluationSuccess(response)
 
-                // TODO: Replace with actual backend API call
-                // const response = await api.evaluations.update(props.evaluationId, values.evaluation!)
-                actions.saveEvaluationSuccess(values.evaluation!)
+                    // Navigate to the new evaluation
+                    router.actions.push(urls.llmAnalyticsEvaluation(response.id))
+                } else {
+                    // Update existing evaluation
+                    const response = await api.update(
+                        `/api/environments/${teamId}/evaluation_configs/${props.evaluationId}/`,
+                        values.evaluation!
+                    )
+                    actions.saveEvaluationSuccess(response)
+                }
+            } catch (error) {
+                console.error('Failed to save evaluation:', error)
             }
         },
     })),

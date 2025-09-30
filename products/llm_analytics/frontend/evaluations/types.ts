@@ -7,6 +7,7 @@ export interface EvaluationConfig {
     enabled: boolean
     prompt: string
     conditions: EvaluationConditionSet[]
+    metadata?: Record<string, any>
     total_runs: number
     last_run_at?: string
     created_at: string

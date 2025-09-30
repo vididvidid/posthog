@@ -103,7 +103,7 @@ export function LLMEvaluationEdit(): JSX.Element {
                         <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
 
                         <div className="space-y-4">
-                            <Field name="name" label="Name" className="max-w-md">
+                            <Field name="name" label="Name">
                                 <LemonInput
                                     value={evaluation.name}
                                     onChange={setEvaluationName}
@@ -112,7 +112,7 @@ export function LLMEvaluationEdit(): JSX.Element {
                                 />
                             </Field>
 
-                            <Field name="description" label="Description (optional)" className="max-w-lg">
+                            <Field name="description" label="Description (optional)">
                                 <LemonTextArea
                                     value={evaluation.description || ''}
                                     onChange={setEvaluationDescription}

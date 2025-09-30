@@ -115,7 +115,7 @@ export function EvaluationTriggers(): JSX.Element {
                                     min={0.1}
                                     max={100}
                                     step={0.1}
-                                    suffix="%"
+                                    suffix={<span>%</span>}
                                 />
                             </div>
                         </div>

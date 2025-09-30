@@ -1,54 +1,10 @@
 import { actions, afterMount, kea, listeners, path, reducers, selectors } from 'kea'
 
+import api from 'lib/api'
+import { teamLogic } from 'scenes/teamLogic'
+
 import type { llmEvaluationsLogicType } from './llmEvaluationsLogicType'
 import { EvaluationConfig } from './types'
-
-// Shared mock data store for prototyping
-declare global {
-    interface Window {
-        mockEvaluations?: EvaluationConfig[]
-    }
-}
-
-// Initialize shared mock data store
-const MOCK_EVALUATIONS: EvaluationConfig[] = [
-    {
-        id: 'eval-1',
-        name: 'Helpfulness Check',
-        description: 'Evaluates if responses are helpful to users',
-        enabled: true,
-        prompt: 'Is this response helpful and accurate? Return true if yes, false if no.',
-        conditions: [
-            {
-                id: 'cond-1',
-                rollout_percentage: 10,
-                properties: [{ key: 'model', operator: 'exact', value: 'gpt-4', type: 'event' }],
-            },
-        ],
-        total_runs: 47,
-        last_run_at: '2024-01-15T10:30:00Z',
-        created_at: '2024-01-10T09:00:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-    },
-    {
-        id: 'eval-2',
-        name: 'Safety Check',
-        description: 'Ensures responses are safe and appropriate',
-        enabled: false,
-        prompt: 'Is this response safe and appropriate? Return true if safe, false if not.',
-        conditions: [
-            {
-                id: 'cond-2',
-                rollout_percentage: 5,
-                properties: [{ key: 'topic', operator: 'exact', value: 'medical', type: 'event' }],
-            },
-        ],
-        total_runs: 12,
-        last_run_at: '2024-01-12T15:20:00Z',
-        created_at: '2024-01-08T14:30:00Z',
-        updated_at: '2024-01-12T15:20:00Z',
-    },
-]
 
 export const llmEvaluationsLogic = kea<llmEvaluationsLogicType>([
     path(['products', 'llm_analytics', 'evaluations', 'llmEvaluationsLogic']),
@@ -71,20 +27,16 @@ export const llmEvaluationsLogic = kea<llmEvaluationsLogicType>([
 
     reducers({
         evaluations: [
-            MOCK_EVALUATIONS as EvaluationConfig[],
+            [] as EvaluationConfig[],
             {
                 loadEvaluationsSuccess: (_, { evaluations }) => evaluations,
                 createEvaluationSuccess: (state, { evaluation }) => [...state, evaluation],
                 updateEvaluationSuccess: (state, { id, evaluation }) =>
-                    state.map((e: EvaluationConfig) =>
-                        e.id === id ? { ...e, ...evaluation, updated_at: new Date().toISOString() } : e
-                    ),
+                    state.map((e: EvaluationConfig) => (e.id === id ? { ...e, ...evaluation } : e)),
                 deleteEvaluationSuccess: (state, { id }) => state.filter((e: EvaluationConfig) => e.id !== id),
                 duplicateEvaluationSuccess: (state, { evaluation }) => [...state, evaluation],
                 toggleEvaluationEnabledSuccess: (state, { id }) =>
-                    state.map((e: EvaluationConfig) =>
-                        e.id === id ? { ...e, enabled: !e.enabled, updated_at: new Date().toISOString() } : e
-                    ),
+                    state.map((e: EvaluationConfig) => (e.id === id ? { ...e, enabled: !e.enabled } : e)),
             },
         ],
         evaluationsLoading: [
@@ -102,101 +54,113 @@ export const llmEvaluationsLogic = kea<llmEvaluationsLogicType>([
         ],
     }),
 
-    listeners(({ actions }) => ({
+    listeners(({ actions, values }) => ({
         loadEvaluations: async () => {
-            // Simulate loading delay
-            await new Promise((resolve) => setTimeout(resolve, 500))
-            // TODO: Replace with actual backend API call
-            // const evaluations = await api.evaluations.list()
-            actions.loadEvaluationsSuccess(window.mockEvaluations || [])
-        },
-
-        createEvaluation: ({ evaluation }) => {
-            // Create new evaluation with generated ID
-            const newEvaluation: EvaluationConfig = {
-                ...evaluation,
-                id: `eval-${Date.now()}`,
-                total_runs: 0,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-            } as EvaluationConfig
-
-            // Update shared mock store
-            if (window.mockEvaluations) {
-                window.mockEvaluations.push(newEvaluation)
-            }
-
-            // TODO: Replace with actual backend API call
-            // const response = await api.evaluations.create(newEvaluation)
-            actions.createEvaluationSuccess(newEvaluation)
-        },
-
-        updateEvaluation: ({ id, evaluation }) => {
-            // Update shared mock store
-            if (window.mockEvaluations) {
-                const index = window.mockEvaluations.findIndex((e) => e.id === id)
-                if (index >= 0) {
-                    window.mockEvaluations[index] = {
-                        ...window.mockEvaluations[index],
-                        ...evaluation,
-                        updated_at: new Date().toISOString(),
-                    }
+            try {
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
                 }
-            }
 
-            // TODO: Replace with actual backend API call
-            // const response = await api.evaluations.update(id, evaluation)
-            actions.updateEvaluationSuccess(id, evaluation)
+                const response = await api.get(`/api/environments/${teamId}/evaluation_configs/`)
+                actions.loadEvaluationsSuccess(response.results)
+            } catch (error) {
+                console.error('Failed to load evaluations:', error)
+                actions.loadEvaluationsSuccess([])
+            }
         },
 
-        deleteEvaluation: ({ id }) => {
-            // Update shared mock store
-            if (window.mockEvaluations) {
-                window.mockEvaluations = window.mockEvaluations.filter((e) => e.id !== id)
-            }
+        createEvaluation: async ({ evaluation }) => {
+            try {
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
+                }
 
-            // TODO: Replace with actual backend API call
-            // await api.evaluations.delete(id)
-            actions.deleteEvaluationSuccess(id)
+                const response = await api.create(`/api/environments/${teamId}/evaluation_configs/`, evaluation)
+                actions.createEvaluationSuccess(response)
+            } catch (error) {
+                console.error('Failed to create evaluation:', error)
+            }
         },
 
-        duplicateEvaluation: ({ id }) => {
-            const original = window.mockEvaluations?.find((e: EvaluationConfig) => e.id === id)
-            if (original) {
-                const duplicate: EvaluationConfig = {
-                    ...original,
-                    id: `eval-${Date.now()}`,
+        updateEvaluation: async ({ id, evaluation }) => {
+            try {
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
+                }
+
+                const response = await api.update(`/api/environments/${teamId}/evaluation_configs/${id}/`, evaluation)
+                actions.updateEvaluationSuccess(id, response)
+            } catch (error) {
+                console.error('Failed to update evaluation:', error)
+            }
+        },
+
+        deleteEvaluation: async ({ id }) => {
+            try {
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
+                }
+
+                // Note: API uses ForbidDestroyModel, so this will return 405
+                // In a real implementation, this would set deleted=true via PATCH
+                await api.update(`/api/environments/${teamId}/evaluation_configs/${id}/`, { deleted: true })
+                actions.deleteEvaluationSuccess(id)
+            } catch (error) {
+                console.error('Failed to delete evaluation:', error)
+            }
+        },
+
+        duplicateEvaluation: async ({ id }) => {
+            try {
+                const original = values.evaluations.find((e: EvaluationConfig) => e.id === id)
+                if (!original) {
+                    return
+                }
+
+                const duplicate = {
                     name: `${original.name} (Copy)`,
-                    total_runs: 0,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
+                    description: original.description,
+                    enabled: original.enabled,
+                    prompt: original.prompt,
+                    conditions: original.conditions,
+                    metadata: original.metadata,
                 }
 
-                // Update shared mock store
-                if (window.mockEvaluations) {
-                    window.mockEvaluations.push(duplicate)
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
                 }
 
-                // TODO: Replace with actual backend API call
-                // const response = await api.evaluations.create(duplicate)
-                actions.duplicateEvaluationSuccess(duplicate)
+                const response = await api.create(`/api/environments/${teamId}/evaluation_configs/`, duplicate)
+                actions.duplicateEvaluationSuccess(response)
+            } catch (error) {
+                console.error('Failed to duplicate evaluation:', error)
             }
         },
 
-        toggleEvaluationEnabled: ({ id }) => {
-            // Update shared mock store
-            if (window.mockEvaluations) {
-                const index = window.mockEvaluations.findIndex((e) => e.id === id)
-                if (index >= 0) {
-                    window.mockEvaluations[index].enabled = !window.mockEvaluations[index].enabled
-                    window.mockEvaluations[index].updated_at = new Date().toISOString()
+        toggleEvaluationEnabled: async ({ id }) => {
+            try {
+                const evaluation = values.evaluations.find((e: EvaluationConfig) => e.id === id)
+                if (!evaluation) {
+                    return
                 }
-            }
 
-            // TODO: Replace with actual backend API call
-            // const evaluation = await api.evaluations.get(id)
-            // await api.evaluations.update(id, { enabled: !evaluation.enabled })
-            actions.toggleEvaluationEnabledSuccess(id)
+                const teamId = teamLogic.values.currentTeamId
+                if (!teamId) {
+                    return
+                }
+
+                await api.update(`/api/environments/${teamId}/evaluation_configs/${id}/`, {
+                    enabled: !evaluation.enabled,
+                })
+                actions.toggleEvaluationEnabledSuccess(id)
+            } catch (error) {
+                console.error('Failed to toggle evaluation enabled:', error)
+            }
         },
     })),
 
@@ -218,10 +182,6 @@ export const llmEvaluationsLogic = kea<llmEvaluationsLogicType>([
     }),
 
     afterMount(({ actions }) => {
-        // Initialize shared mock data store for prototyping
-        if (!window.mockEvaluations) {
-            window.mockEvaluations = [...MOCK_EVALUATIONS]
-        }
         actions.loadEvaluations()
     }),
 ])

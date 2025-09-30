@@ -28,7 +28,12 @@ import products.tasks.backend.api as tasks
 import products.revenue_analytics.backend.api as revenue_analytics
 import products.early_access_features.backend.api as early_access_feature
 import products.data_warehouse.backend.api.fix_hogql as fix_hogql
-from products.llm_analytics.backend.api import DatasetItemViewSet, DatasetViewSet, LLMProxyViewSet
+from products.llm_analytics.backend.api import (
+    DatasetItemViewSet,
+    DatasetViewSet,
+    EvaluationConfigViewSet,
+    LLMProxyViewSet,
+)
 from products.messaging.backend.api import MessageCategoryViewSet, MessagePreferencesViewSet, MessageTemplatesViewSet
 from products.user_interviews.backend.api import UserInterviewViewSet
 
@@ -866,5 +871,12 @@ register_grandfathered_environment_nested_viewset(
     r"dataset_items",
     DatasetItemViewSet,
     "environment_dataset_items",
+    ["team_id"],
+)
+
+register_grandfathered_environment_nested_viewset(
+    r"evaluation_configs",
+    EvaluationConfigViewSet,
+    "environment_evaluation_configs",
     ["team_id"],
 )

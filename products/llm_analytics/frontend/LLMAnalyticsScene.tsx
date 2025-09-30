@@ -386,7 +386,7 @@ function LLMAnalyticsEvaluations(): JSX.Element {
     ]
 
     return (
-        <BindLogic logic={llmEvaluationsLogic}>
+        <BindLogic logic={llmEvaluationsLogic} props={{}}>
             <div className="space-y-4">
                 {/* Header */}
                 <div className="flex justify-between items-center">
