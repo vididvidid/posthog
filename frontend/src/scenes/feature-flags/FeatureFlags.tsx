@@ -465,13 +465,6 @@ export function FeatureFlags(): JSX.Element {
     const { user } = useValues(userLogic)
     const { featureFlags } = useValues(enabledFeaturesLogic)
 
-    // Debug logging for MaxTool registration
-    console.info('[FeatureFlags] Component rendered', {
-        user: user?.uuid,
-        artificialHogEnabled: featureFlags['ARTIFICIAL_HOG'],
-        featureFlags: Object.keys(featureFlags).filter((key) => key.includes('HOG') || key.includes('artificial')),
-    })
-
     return (
         <SceneContent className="feature_flags">
             <SceneTitleSection
